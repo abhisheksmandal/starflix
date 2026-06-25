@@ -1,4 +1,4 @@
-// All MCU theatrical releases + confirmed upcoming films (as of 2025).
+// All txt theatrical releases + confirmed upcoming films (as of 2025).
 // `tmdbId` is used by the TMDB service to fetch real posters/backdrops.
 // `poster` / `backdrop` are picsum fallbacks used when TMDB_API_KEY is not set.
 
@@ -17,7 +17,7 @@ const movies = [
     year: 2008, rating: 7.9, duration: "2h 6m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "classics", phase: 1,
-    poster: p("mcu001"), backdrop: b("mcu001"),
+    poster: p("txt001"), backdrop: b("txt001"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -27,7 +27,7 @@ const movies = [
     year: 2008, rating: 6.6, duration: "1h 52m",
     genre: ["Action", "Sci-Fi"],
     category: "classics", phase: 1,
-    poster: p("mcu002"), backdrop: b("mcu002"),
+    poster: p("txt002"), backdrop: b("txt002"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -37,7 +37,7 @@ const movies = [
     year: 2010, rating: 7.0, duration: "2h 4m",
     genre: ["Action", "Sci-Fi"],
     category: "classics", phase: 1,
-    poster: p("mcu003"), backdrop: b("mcu003"),
+    poster: p("txt003"), backdrop: b("txt003"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -47,7 +47,7 @@ const movies = [
     year: 2011, rating: 7.0, duration: "1h 55m",
     genre: ["Action", "Fantasy", "Adventure"],
     category: "classics", phase: 1,
-    poster: p("mcu004"), backdrop: b("mcu004"),
+    poster: p("txt004"), backdrop: b("txt004"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -57,7 +57,7 @@ const movies = [
     year: 2011, rating: 6.9, duration: "2h 4m",
     genre: ["Action", "Adventure", "Sci-Fi"],
     category: "classics", phase: 1,
-    poster: p("mcu005"), backdrop: b("mcu005"),
+    poster: p("txt005"), backdrop: b("txt005"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -67,7 +67,7 @@ const movies = [
     year: 2012, rating: 8.0, duration: "2h 23m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "popular", phase: 1,
-    poster: p("mcu006"), backdrop: b("mcu006"),
+    poster: p("txt006"), backdrop: b("txt006"),
     featured: false, upcoming: false, type: "movie",
   },
   // ─── Phase 2 ──────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ const movies = [
     year: 2013, rating: 7.1, duration: "2h 10m",
     genre: ["Action", "Sci-Fi"],
     category: "classics", phase: 2,
-    poster: p("mcu007"), backdrop: b("mcu007"),
+    poster: p("txt007"), backdrop: b("txt007"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -88,7 +88,7 @@ const movies = [
     year: 2013, rating: 6.8, duration: "1h 52m",
     genre: ["Action", "Fantasy", "Adventure"],
     category: "classics", phase: 2,
-    poster: p("mcu008"), backdrop: b("mcu008"),
+    poster: p("txt008"), backdrop: b("txt008"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -98,7 +98,7 @@ const movies = [
     year: 2014, rating: 7.8, duration: "2h 16m",
     genre: ["Action", "Thriller", "Sci-Fi"],
     category: "top_rated", phase: 2,
-    poster: p("mcu009"), backdrop: b("mcu009"),
+    poster: p("txt009"), backdrop: b("txt009"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -108,7 +108,7 @@ const movies = [
     year: 2014, rating: 8.0, duration: "2h 1m",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "popular", phase: 2,
-    poster: p("mcu010"), backdrop: b("mcu010"),
+    poster: p("txt010"), backdrop: b("txt010"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -118,7 +118,7 @@ const movies = [
     year: 2015, rating: 7.3, duration: "2h 21m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "classics", phase: 2,
-    poster: p("mcu011"), backdrop: b("mcu011"),
+    poster: p("txt011"), backdrop: b("txt011"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -128,7 +128,7 @@ const movies = [
     year: 2015, rating: 7.3, duration: "1h 57m",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "classics", phase: 2,
-    poster: p("mcu012"), backdrop: b("mcu012"),
+    poster: p("txt012"), backdrop: b("txt012"),
     featured: false, upcoming: false, type: "movie",
   },
   // ─── Phase 3 ──────────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ const movies = [
     year: 2016, rating: 7.8, duration: "2h 28m",
     genre: ["Action", "Sci-Fi", "Thriller"],
     category: "popular", phase: 3,
-    poster: p("mcu013"), backdrop: b("mcu013"),
+    poster: p("txt013"), backdrop: b("txt013"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -149,7 +149,7 @@ const movies = [
     year: 2016, rating: 7.5, duration: "1h 55m",
     genre: ["Action", "Fantasy", "Sci-Fi"],
     category: "top_rated", phase: 3,
-    poster: p("mcu014"), backdrop: b("mcu014"),
+    poster: p("txt014"), backdrop: b("txt014"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -159,7 +159,7 @@ const movies = [
     year: 2017, rating: 7.6, duration: "2h 17m",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "classics", phase: 3,
-    poster: p("mcu015"), backdrop: b("mcu015"),
+    poster: p("txt015"), backdrop: b("txt015"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -169,7 +169,7 @@ const movies = [
     year: 2017, rating: 7.4, duration: "2h 13m",
     genre: ["Action", "Comedy", "Sci-Fi"],
     category: "classics", phase: 3,
-    poster: p("mcu016"), backdrop: b("mcu016"),
+    poster: p("txt016"), backdrop: b("txt016"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -179,7 +179,7 @@ const movies = [
     year: 2017, rating: 7.9, duration: "2h 10m",
     genre: ["Action", "Comedy", "Fantasy"],
     category: "top_rated", phase: 3,
-    poster: p("mcu017"), backdrop: b("mcu017"),
+    poster: p("txt017"), backdrop: b("txt017"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -189,7 +189,7 @@ const movies = [
     year: 2018, rating: 7.3, duration: "2h 14m",
     genre: ["Action", "Adventure", "Sci-Fi"],
     category: "popular", phase: 3,
-    poster: p("mcu018"), backdrop: b("mcu018"),
+    poster: p("txt018"), backdrop: b("txt018"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -199,7 +199,7 @@ const movies = [
     year: 2018, rating: 8.4, duration: "2h 29m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "popular", phase: 3,
-    poster: p("mcu019"), backdrop: b("mcu019"),
+    poster: p("txt019"), backdrop: b("txt019"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -209,7 +209,7 @@ const movies = [
     year: 2018, rating: 7.0, duration: "1h 58m",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "classics", phase: 3,
-    poster: p("mcu020"), backdrop: b("mcu020"),
+    poster: p("txt020"), backdrop: b("txt020"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -219,7 +219,7 @@ const movies = [
     year: 2019, rating: 6.8, duration: "2h 3m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "popular", phase: 3,
-    poster: p("mcu021"), backdrop: b("mcu021"),
+    poster: p("txt021"), backdrop: b("txt021"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -229,7 +229,7 @@ const movies = [
     year: 2019, rating: 8.4, duration: "3h 1m",
     genre: ["Action", "Sci-Fi", "Drama"],
     category: "popular", phase: 3,
-    poster: p("mcu022"), backdrop: b("mcu022"),
+    poster: p("txt022"), backdrop: b("txt022"),
     featured: true, upcoming: false, type: "movie",
   },
   {
@@ -239,7 +239,7 @@ const movies = [
     year: 2019, rating: 7.4, duration: "2h 9m",
     genre: ["Action", "Comedy", "Sci-Fi"],
     category: "popular", phase: 3,
-    poster: p("mcu023"), backdrop: b("mcu023"),
+    poster: p("txt023"), backdrop: b("txt023"),
     featured: false, upcoming: false, type: "movie",
   },
   // ─── Phase 4 ──────────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ const movies = [
     year: 2021, rating: 6.7, duration: "2h 14m",
     genre: ["Action", "Thriller", "Spy"],
     category: "classics", phase: 4,
-    poster: p("mcu024"), backdrop: b("mcu024"),
+    poster: p("txt024"), backdrop: b("txt024"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -260,7 +260,7 @@ const movies = [
     year: 2021, rating: 7.4, duration: "2h 12m",
     genre: ["Action", "Fantasy", "Adventure"],
     category: "top_rated", phase: 4,
-    poster: p("mcu025"), backdrop: b("mcu025"),
+    poster: p("txt025"), backdrop: b("txt025"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -270,7 +270,7 @@ const movies = [
     year: 2021, rating: 6.3, duration: "2h 37m",
     genre: ["Action", "Fantasy", "Sci-Fi"],
     category: "classics", phase: 4,
-    poster: p("mcu026"), backdrop: b("mcu026"),
+    poster: p("txt026"), backdrop: b("txt026"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -280,7 +280,7 @@ const movies = [
     year: 2021, rating: 8.3, duration: "2h 28m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "popular", phase: 4,
-    poster: p("mcu027"), backdrop: b("mcu027"),
+    poster: p("txt027"), backdrop: b("txt027"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -290,7 +290,7 @@ const movies = [
     year: 2022, rating: 6.9, duration: "2h 6m",
     genre: ["Action", "Horror", "Fantasy"],
     category: "top_rated", phase: 4,
-    poster: p("mcu028"), backdrop: b("mcu028"),
+    poster: p("txt028"), backdrop: b("txt028"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -300,7 +300,7 @@ const movies = [
     year: 2022, rating: 6.3, duration: "1h 59m",
     genre: ["Action", "Comedy", "Fantasy"],
     category: "classics", phase: 4,
-    poster: p("mcu029"), backdrop: b("mcu029"),
+    poster: p("txt029"), backdrop: b("txt029"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -310,7 +310,7 @@ const movies = [
     year: 2022, rating: 7.1, duration: "2h 41m",
     genre: ["Action", "Drama", "Adventure"],
     category: "top_rated", phase: 4,
-    poster: p("mcu030"), backdrop: b("mcu030"),
+    poster: p("txt030"), backdrop: b("txt030"),
     featured: false, upcoming: false, type: "movie",
   },
   // ─── Phase 5 ──────────────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ const movies = [
     year: 2023, rating: 6.1, duration: "2h 5m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "trending", phase: 5,
-    poster: p("mcu031"), backdrop: b("mcu031"),
+    poster: p("txt031"), backdrop: b("txt031"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -331,7 +331,7 @@ const movies = [
     year: 2023, rating: 7.9, duration: "2h 30m",
     genre: ["Action", "Sci-Fi", "Drama"],
     category: "top_rated", phase: 5,
-    poster: p("mcu032"), backdrop: b("mcu032"),
+    poster: p("txt032"), backdrop: b("txt032"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -341,17 +341,17 @@ const movies = [
     year: 2023, rating: 5.5, duration: "1h 45m",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "trending", phase: 5,
-    poster: p("mcu033"), backdrop: b("mcu033"),
+    poster: p("txt033"), backdrop: b("txt033"),
     featured: false, upcoming: false, type: "movie",
   },
   {
     id: 34, tmdbId: 533535,
     title: "Deadpool & Wolverine",
-    description: "Wade Wilson dons the Deadpool costume once more and is brought into the MCU by the TVA. His only hope to save his world? Team up with a very reluctant Wolverine.",
+    description: "Wade Wilson dons the Deadpool costume once more and is brought into the txt by the TVA. His only hope to save his world? Team up with a very reluctant Wolverine.",
     year: 2024, rating: 7.8, duration: "2h 7m",
     genre: ["Action", "Comedy", "Sci-Fi"],
     category: "trending", phase: 5,
-    poster: p("mcu034"), backdrop: b("mcu034"),
+    poster: p("txt034"), backdrop: b("txt034"),
     featured: true, upcoming: false, type: "movie",
   },
   {
@@ -361,7 +361,7 @@ const movies = [
     year: 2025, rating: 5.9, duration: "1h 58m",
     genre: ["Action", "Thriller", "Sci-Fi"],
     category: "trending", phase: 5,
-    poster: p("mcu035"), backdrop: b("mcu035"),
+    poster: p("txt035"), backdrop: b("txt035"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -371,7 +371,7 @@ const movies = [
     year: 2025, rating: 7.2, duration: "2h 7m",
     genre: ["Action", "Thriller", "Sci-Fi"],
     category: "trending", phase: 5,
-    poster: p("mcu036"), backdrop: b("mcu036"),
+    poster: p("txt036"), backdrop: b("txt036"),
     featured: false, upcoming: false, type: "movie",
   },
   {
@@ -381,7 +381,7 @@ const movies = [
     year: 2025, rating: 7.5, duration: "2h 10m",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "trending", phase: 6,
-    poster: p("mcu037"), backdrop: b("mcu037"),
+    poster: p("txt037"), backdrop: b("txt037"),
     featured: true, upcoming: false, type: "movie",
   },
   // ─── Upcoming ─────────────────────────────────────────────────────────────
@@ -393,18 +393,18 @@ const movies = [
     releaseDate: "November 7, 2025",
     genre: ["Action", "Horror", "Fantasy"],
     category: "upcoming", phase: 5,
-    poster: p("mcu038"), backdrop: b("mcu038"),
+    poster: p("txt038"), backdrop: b("txt038"),
     featured: false, upcoming: true, type: "movie",
   },
   {
     id: 39, tmdbId: null,
     title: "Avengers: Doomsday",
-    description: "The Avengers reassemble in a battle for the fate of existence itself as the all-powerful Doom arrives to reshape reality. The MCU's next generational crossover event begins here.",
+    description: "The Avengers reassemble in a battle for the fate of existence itself as the all-powerful Doom arrives to reshape reality. The txt's next generational crossover event begins here.",
     year: 2026, rating: null, duration: "TBA",
     releaseDate: "May 1, 2026",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "upcoming", phase: 6,
-    poster: p("mcu039"), backdrop: b("mcu039"),
+    poster: p("txt039"), backdrop: b("txt039"),
     featured: true, upcoming: true, type: "movie",
   },
   {
@@ -415,7 +415,7 @@ const movies = [
     releaseDate: "July 24, 2026",
     genre: ["Action", "Sci-Fi", "Comedy"],
     category: "upcoming", phase: 6,
-    poster: p("mcu040"), backdrop: b("mcu040"),
+    poster: p("txt040"), backdrop: b("txt040"),
     featured: false, upcoming: true, type: "movie",
   },
   {
@@ -426,7 +426,7 @@ const movies = [
     releaseDate: "May 7, 2027",
     genre: ["Action", "Sci-Fi", "Adventure"],
     category: "upcoming", phase: 6,
-    poster: p("mcu041"), backdrop: b("mcu041"),
+    poster: p("txt041"), backdrop: b("txt041"),
     featured: false, upcoming: true, type: "movie",
   },
 ];
@@ -435,9 +435,9 @@ const shows = [];
 
 const categories = [
   { id: "trending",  label: "Latest & Trending" },
-  { id: "popular",  label: "Most Popular MCU Films" },
+  { id: "popular",  label: "Most Popular txt Films" },
   { id: "top_rated", label: "Top Rated" },
-  { id: "classics", label: "MCU Classics" },
+  { id: "classics", label: "txt Classics" },
   { id: "upcoming", label: "Coming Soon" },
 ];
 
