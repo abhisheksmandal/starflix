@@ -10,13 +10,13 @@ async function apiFetch(path) {
 }
 
 export const api = {
-  getFeatured: () => apiFetch("/api/content/featured"),
-  getTrending: () => apiFetch("/api/content/trending"),
-  getCategories: () => apiFetch("/api/content/categories"),
-  getByCategory: (slug) => apiFetch(`/api/content/category/${slug}`),
-  search: (q) => apiFetch(`/api/content/search?q=${encodeURIComponent(q)}`),
-  getMovie: (id) => apiFetch(`/api/movies/${id}`),
-  getShow: (id) => apiFetch(`/api/shows/${id}`),
-  getMovies: () => apiFetch("/api/movies"),
-  getShows: () => apiFetch("/api/shows"),
+  getFeatured: () => apiFetch("/content/featured"),
+  getTrending: () => apiFetch("/content/trending"),
+  getCategories: () => apiFetch("/content/categories"),
+  getByCategory: (slug) => apiFetch(`/content/category/${slug}`),
+  search: (q) => apiFetch(`/content/search?q=${encodeURIComponent(q)}`),
+  getMovie: (id) => apiFetch(`/movies/${id}`),
+  getShow: (id) => apiFetch(`/shows/${id}`),
+  getMovies: () => apiFetch("/movies"),
+  getShows: () => apiFetch("/shows"),
 };

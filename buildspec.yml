@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION
+          | docker login --username AWS --password-stdin
+            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - COMMIT_SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
+
+  build:
+    commands:
+      - docker build -t $FRONTEND_REPO:$COMMIT_SHA -t $FRONTEND_REPO:latest ./frontend
+      - docker build -t $BACKEND_REPO:$COMMIT_SHA  -t $BACKEND_REPO:latest  ./backend
+
+  post_build:
+    commands:
+      - docker push $FRONTEND_REPO:$COMMIT_SHA
+      - docker push $FRONTEND_REPO:latest
+      - docker push $BACKEND_REPO:$COMMIT_SHA
+      - docker push $BACKEND_REPO:latest
+      - aws ecs update-service --cluster $ECS_CLUSTER
+          --service $FRONTEND_SERVICE --force-new-deployment
+          --region $AWS_DEFAULT_REGION
+      - aws ecs update-service --cluster $ECS_CLUSTER
+          --service $BACKEND_SERVICE --force-new-deployment
+          --region $AWS_DEFAULT_REGION
