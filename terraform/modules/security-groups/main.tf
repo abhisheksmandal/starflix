@@ -4,7 +4,7 @@
 #
 # Dependency note: ALB SG egress rules reference the ECS SG, and ECS SG ingress
 # rules reference the ALB SG. With separate rule resources (vs inline blocks)
-# Terraform resolves this correctly — both SGs are created first, then the rules.
+# Terraform resolves this correctly - both SGs are created first, then the rules.
 
 # ── ALB Security Group ─────────────────────────────────────────────────────────
 # Accepts inbound HTTPS (and HTTP for redirect) from the public internet.
@@ -31,7 +31,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
 
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from internet — ALB listener rule redirects to HTTPS"
+  description       = "HTTP from internet - ALB listener rule redirects to HTTPS"
   ip_protocol       = "tcp"
   from_port         = 80
   to_port           = 80
@@ -91,7 +91,7 @@ resource "aws_vpc_security_group_ingress_rule" "ecs_from_alb_backend" {
 
 resource "aws_vpc_security_group_egress_rule" "ecs_https_out" {
   security_group_id = aws_security_group.ecs.id
-  description       = "HTTPS outbound — covers AWS VPC endpoints and internet via NAT Gateway"
+  description       = "HTTPS outbound - covers AWS VPC endpoints and internet via NAT Gateway"
   ip_protocol       = "tcp"
   from_port         = 443
   to_port           = 443
@@ -100,7 +100,7 @@ resource "aws_vpc_security_group_egress_rule" "ecs_https_out" {
 
 # ── VPC Endpoint Security Group ────────────────────────────────────────────────
 # Attached to interface endpoints (ECR, SSM, Secrets Manager, CloudWatch Logs).
-# Accepts inbound HTTPS from ECS tasks only — no other source, no egress needed.
+# Accepts inbound HTTPS from ECS tasks only - no other source, no egress needed.
 
 resource "aws_security_group" "vpc_endpoints" {
   name        = "${var.name_prefix}-endpoint-sg"
