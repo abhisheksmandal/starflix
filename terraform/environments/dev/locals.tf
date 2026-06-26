@@ -27,5 +27,6 @@ locals {
   # Infrastructure feature flags — controls module behaviour per environment.
   features = {
     single_nat_gateway = var.single_nat_gateway
+    enable_dns         = var.enable_dns
   }
 }

@@ -136,3 +136,19 @@ output "artifacts_bucket_arn" {
   description = "ARN of the S3 artifacts bucket."
   value       = module.s3.artifacts_bucket_arn
 }
+# ── DNS ────────────────────────────────────────────────────────────────────────
+
+output "route53_zone_id" {
+  description = "Route 53 hosted zone ID."
+  value       = local.features.enable_dns ? module.dns[0].zone_id : null
+}
+
+output "route53_name_servers" {
+  description = "Name servers to delegate at your registrar."
+  value       = local.features.enable_dns ? module.dns[0].zone_name_servers : null
+}
+
+output "acm_certificate_arn" {
+  description = "Validated ACM certificate ARN (ap-south-1) for the ALB."
+  value       = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
+}

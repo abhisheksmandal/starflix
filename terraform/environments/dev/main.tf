@@ -99,3 +99,16 @@ module "s3" {
 
   tags = local.common_tags
 }
+############################################
+# DNS
+############################################
+
+module "dns" {
+  source = "../../modules/dns"
+  count  = local.features.enable_dns ? 1 : 0
+
+  name_prefix = local.name_prefix
+  domain_name = var.domain_name
+
+  tags = local.common_tags
+}

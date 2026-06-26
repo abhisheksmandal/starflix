@@ -88,3 +88,14 @@ variable "s3_force_destroy" {
   description = "Allow Terraform to destroy S3 buckets even when they contain objects. Set true only for dev."
   default     = false
 }
+variable "domain_name" {
+  type        = string
+  description = "Root domain for Route 53 hosted zone and ACM certificates."
+  default     = "starflix.com"
+}
+
+variable "enable_dns" {
+  type        = bool
+  description = "Deploy Route 53 hosted zone and ACM certificate. Disable to skip DNS provisioning."
+  default     = false
+}
