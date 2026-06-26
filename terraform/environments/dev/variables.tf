@@ -17,7 +17,7 @@ variable "environment" {
 variable "aws_region" {
   type        = string
   description = "AWS region for all resources."
-  default     = "us-east-1"
+  default     = "ap-south-1"
 }
 
 variable "vpc_cidr" {

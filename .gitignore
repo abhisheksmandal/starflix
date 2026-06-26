@@ -26,3 +26,44 @@ Thumbs.db
 
 # Docker
 docker-volumes/
+
+# =========================
+# Terraform
+# =========================
+
+# Terraform state files (NEVER commit)
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Local Terraform directories
+**/.terraform/
+.terraform/
+
+# Terraform CLI configuration
+.terraformrc
+terraform.rc
+
+# Override files (local-only configs)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Plan files (optional but recommended to ignore)
+*.tfplan
+
+# Lock file (IMPORTANT: usually SHOULD be committed, but optional)
+# If you want strict reproducibility, KEEP this file tracked:
+# !.terraform.lock.hcl
+
+# Sensitive variable files (be careful here)
+*.tfvars
+*.tfvars.json
+
+# BUT keep examples
+!.tfvars.example
+
+# Backend config files (optional if you separate secrets)
+*.backend
