@@ -51,3 +51,20 @@ output "vpc_endpoint_security_group_id" {
   description = "ID of the VPC interface endpoint security group."
   value       = module.security_groups.vpc_endpoint_sg_id
 }
+
+# ── ECR ────────────────────────────────────────────────────────────────────────
+
+output "frontend_ecr_repository_url" {
+
+  description = "Frontend Docker image repository URL."
+
+  value = module.ecr.frontend_repository_url
+}
+
+
+output "backend_ecr_repository_url" {
+
+  description = "Backend Docker image repository URL."
+
+  value = module.ecr.backend_repository_url
+}
