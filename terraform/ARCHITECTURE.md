@@ -161,7 +161,7 @@ environments/dev (root)
 │       outputs: assets_bucket_name, artifacts_bucket_name
 │
 ├── module.dns                          ← no vpc deps (global)
-│       outputs: zone_id, acm_cert_arn, cloudfront_cert_arn (us-east-1)
+│       outputs: zone_id, acm_cert_arn, cloudfront_cert_arn (ap-south-1)
 │
 ├── module.alb                          ← depends on: module.vpc, module.security_groups, module.dns
 │       inputs:  vpc_id, public_subnet_ids, alb_sg_id, acm_cert_arn
@@ -183,7 +183,7 @@ environments/dev (root)
 │       outputs: service_name
 │
 ├── module.cloudfront                   ← depends on: module.alb, module.s3, module.dns
-│       inputs:  alb_dns_name, assets_bucket_name, acm_cert_arn (us-east-1)
+│       inputs:  alb_dns_name, assets_bucket_name, acm_cert_arn (ap-south-1)
 │       outputs: distribution_id, distribution_domain
 │
 ├── module.codebuild                    ← depends on: module.ecr, module.iam, module.s3
@@ -599,7 +599,7 @@ Route 53 Hosted Zone: starflix.com
   └── CNAME       api.starflix.com        → backend ALB (stage/dev only; prod goes through CF)
 
 ACM Certificate (ap-south-1):  *.starflix.com, starflix.com   → ALB
-ACM Certificate (us-east-1):   *.starflix.com, starflix.com   → CloudFront (must be us-east-1)
+ACM Certificate (ap-south-1):   *.starflix.com, starflix.com   → CloudFront (must be ap-south-1)
 ```
 
 ---
