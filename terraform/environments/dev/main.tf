@@ -60,3 +60,25 @@ module "iam" {
   tags = local.common_tags
 
 }
+
+############################################
+# VPC Endpoints
+############################################
+
+module "vpc_endpoints" {
+  source = "../../modules/vpc-endpoints"
+
+  name_prefix = local.name_prefix
+
+  aws_region = var.aws_region
+
+  vpc_id = module.vpc.vpc_id
+
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  private_route_table_ids = module.vpc.private_route_table_ids
+
+  endpoint_security_group_id = module.security_groups.vpc_endpoint_sg_id
+
+  tags = local.common_tags
+}

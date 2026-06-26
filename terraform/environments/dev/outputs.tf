@@ -97,3 +97,15 @@ output "codebuild_role_arn" {
   value = module.iam.codebuild_role_arn
 
 }
+
+# ── VPC Endpoints ───────────────────────────────────────────────────────────────────────
+
+output "interface_endpoint_ids" {
+  description = "Interface endpoint IDs."
+  value       = module.vpc_endpoints.interface_endpoint_ids
+}
+
+output "gateway_endpoint_id" {
+  description = "S3 Gateway Endpoint."
+  value       = module.vpc_endpoints.s3_gateway_endpoint_id
+}
