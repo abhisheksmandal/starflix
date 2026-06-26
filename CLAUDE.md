@@ -143,12 +143,12 @@ App.jsx uses React hooks (useState, useEffect, useCallback). No Redux/Zustand â€
 
 ## Deployment
 
-**AWS ECS**: Infrastructure set up in `deploy.md`. The `buildspec.yml` is used by AWS CodeBuild to:
+**AWS ECS (EC2 launch type)**: Infrastructure set up in `deploy.md`. The `buildspec.yml` is used by AWS CodeBuild to:
 1. Build Docker images for both frontend and backend
 2. Push to ECR
-3. Update ECS services (Fargate)
+3. Update ECS services (EC2 launch type â€” `target_type = "instance"` in ALB target groups)
 
-Both services run in same ECS cluster; frontend proxies to backend via ECS Service Connect.
+Both services run in the same ECS cluster on EC2 hosts. Each service has its own public-facing ALB: frontend ALB on port 80/443, backend ALB on port 4000.
 
 ## Notes for Future Development
 

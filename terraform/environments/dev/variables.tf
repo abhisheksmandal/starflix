@@ -99,3 +99,8 @@ variable "enable_dns" {
   description = "Deploy Route 53 hosted zone and ACM certificate. Disable to skip DNS provisioning."
   default     = false
 }
+variable "enable_deletion_protection" {
+  type        = bool
+  description = "Enable ALB deletion protection. Should be true in prod only."
+  default     = false
+}

@@ -112,3 +112,25 @@ module "dns" {
 
   tags = local.common_tags
 }
+
+############################################
+# ALB
+############################################
+
+module "alb" {
+  source = "../../modules/alb"
+
+  name_prefix           = local.name_prefix
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
+  alb_security_group_id = module.security_groups.alb_sg_id
+
+  acm_certificate_arn = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
+
+  frontend_port = var.frontend_port
+  backend_port  = var.backend_port
+
+  enable_deletion_protection = var.enable_deletion_protection
+
+  tags = local.common_tags
+}

@@ -533,11 +533,12 @@ The `10.x` second-octet aligns with environment index. `1x` third-octet = privat
 
 ```
 Public Tier  (internet-routable via IGW)
-  └── ALB (frontend + backend)
+  └── ALB frontend  (port 80 → 443 redirect, HTTPS to ECS)
+  └── ALB backend   (port 4000, public-facing)
   └── NAT Gateway EIPs
 
 Private Tier  (outbound via NAT Gateway)
-  └── ECS EC2 hosts
+  └── ECS EC2 hosts (EC2 launch type)
   └── VPC Interface Endpoints
 ```
 
@@ -570,14 +571,15 @@ VPC endpoints are guarded by `starflix-{env}-endpoint-sg` (HTTPS/443 from `ecs-s
 
 ```
 Client
-  └─► CloudFront  (HTTPS, TLS 1.2+, WAF in prod)
-        ├─► S3 (OAC)             — static assets (posters, JS, CSS)
-        └─► ALB (frontend)       — React app (nginx, port 80)
-              └─► ECS frontend task
-                    └─► ALB (backend) [internal, /api/* path]
-                          └─► ECS backend task (port 4000)
-                                └─► Secrets Manager (TMDB key, via VPC endpoint)
-                                └─► TMDB API (via NAT Gateway → internet)
+  ├─► CloudFront  (HTTPS, TLS 1.2+, WAF in prod)
+  │     ├─► S3 (OAC)             — static assets (posters, JS, CSS)
+  │     └─► ALB (frontend)       — React app (nginx, port 80/443)
+  │           └─► ECS frontend task (EC2 launch type)
+  │
+  └─► ALB (backend) [public-facing, port 4000]
+        └─► ECS backend task (EC2 launch type)
+              └─► Secrets Manager (TMDB key, via VPC endpoint)
+              └─► TMDB API (via NAT Gateway → internet)
 ```
 
 ### NAT Gateway HA Model
@@ -596,7 +598,7 @@ Controlled by `local.features.single_nat_gateway` → `var.single_nat_gateway` i
 Route 53 Hosted Zone: starflix.com
   ├── A (alias)   starflix.com            → CloudFront distribution
   ├── A (alias)   www.starflix.com        → CloudFront distribution
-  └── CNAME       api.starflix.com        → backend ALB (stage/dev only; prod goes through CF)
+  └── CNAME       api.starflix.com        → backend ALB (public-facing, port 4000)
 
 ACM Certificate (ap-south-1):  *.starflix.com, starflix.com   → ALB
 ACM Certificate (ap-south-1):   *.starflix.com, starflix.com   → CloudFront (must be ap-south-1)

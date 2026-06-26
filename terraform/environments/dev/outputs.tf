@@ -152,3 +152,25 @@ output "acm_certificate_arn" {
   description = "Validated ACM certificate ARN (ap-south-1) for the ALB."
   value       = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
 }
+
+# ── ALB ────────────────────────────────────────────────────────────────────────
+
+output "frontend_alb_dns_name" {
+  description = "DNS name of the frontend ALB."
+  value       = module.alb.frontend_alb_dns_name
+}
+
+output "frontend_target_group_arn" {
+  description = "Frontend target group ARN for ECS service."
+  value       = module.alb.frontend_target_group_arn
+}
+
+output "backend_alb_dns_name" {
+  description = "DNS name of the backend ALB."
+  value       = module.alb.backend_alb_dns_name
+}
+
+output "backend_target_group_arn" {
+  description = "Backend target group ARN for ECS service."
+  value       = module.alb.backend_target_group_arn
+}
