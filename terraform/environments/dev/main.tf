@@ -44,3 +44,19 @@ module "ecr" {
 
   tags = local.common_tags
 }
+
+############################################
+# IAM
+############################################
+
+module "iam" {
+
+  source = "../../modules/iam"
+
+
+  name_prefix = local.name_prefix
+
+
+  tags = local.common_tags
+
+}

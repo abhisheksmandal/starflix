@@ -68,3 +68,32 @@ output "backend_ecr_repository_url" {
 
   value = module.ecr.backend_repository_url
 }
+
+# ── IAM ───────────────────────────────────────────────────────────────────────
+
+output "ecs_task_execution_role_arn" {
+
+  value = module.iam.ecs_task_execution_role_arn
+
+}
+
+
+output "ecs_task_role_arn" {
+
+  value = module.iam.ecs_task_role_arn
+
+}
+
+
+output "ecs_instance_role_arn" {
+
+  value = module.iam.ecs_instance_role_arn
+
+}
+
+
+output "codebuild_role_arn" {
+
+  value = module.iam.codebuild_role_arn
+
+}
