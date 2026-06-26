@@ -134,3 +134,19 @@ module "alb" {
 
   tags = local.common_tags
 }
+
+############################################
+# Secrets
+############################################
+
+module "secrets" {
+  source = "../../modules/secrets"
+
+  name_prefix  = local.name_prefix
+  project      = var.project
+  environment  = var.environment
+
+  recovery_window_days = var.secrets_recovery_window_days
+
+  tags = local.common_tags
+}

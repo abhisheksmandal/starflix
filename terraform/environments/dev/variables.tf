@@ -104,3 +104,9 @@ variable "enable_deletion_protection" {
   description = "Enable ALB deletion protection. Should be true in prod only."
   default     = false
 }
+
+variable "secrets_recovery_window_days" {
+  type        = number
+  description = "Days before permanent secret deletion. Set 0 for dev to allow fast destroy."
+  default     = 0
+}
