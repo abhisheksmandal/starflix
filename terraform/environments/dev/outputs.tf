@@ -206,3 +206,25 @@ output "github_token_arn" {
   description = "ARN of the GitHub token secret for CodeBuild."
   value       = module.secrets.github_token_arn
 }
+
+# ── ECS Cluster ────────────────────────────────────────────────────────────────
+
+output "ecs_cluster_id" {
+  description = "ID of the ECS cluster."
+  value       = module.ecs_cluster.cluster_id
+}
+
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster."
+  value       = module.ecs_cluster.cluster_name
+}
+
+output "ecs_capacity_provider_name" {
+  description = "Name of the ECS capacity provider."
+  value       = module.ecs_cluster.capacity_provider_name
+}
+
+output "ecs_autoscaling_group_name" {
+  description = "Name of the ECS Auto Scaling Group."
+  value       = module.ecs_cluster.autoscaling_group_name
+}

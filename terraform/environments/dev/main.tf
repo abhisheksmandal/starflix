@@ -150,3 +150,26 @@ module "secrets" {
 
   tags = local.common_tags
 }
+
+############################################
+# ECS Cluster
+############################################
+
+module "ecs_cluster" {
+  source = "../../modules/ecs-cluster"
+
+  name_prefix            = local.name_prefix
+  private_subnet_ids     = module.vpc.private_subnet_ids
+  ecs_security_group_id  = module.security_groups.ecs_sg_id
+  ecs_instance_role_name = module.iam.ecs_instance_role_name
+
+  instance_type    = var.ecs_instance_type
+  ami_id           = var.ecs_ami_id
+  desired_capacity = var.ecs_desired_capacity
+  min_size         = var.ecs_min_size
+  max_size         = var.ecs_max_size
+
+  enable_container_insights = var.enable_container_insights
+
+  tags = local.common_tags
+}

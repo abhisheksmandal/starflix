@@ -110,3 +110,39 @@ variable "secrets_recovery_window_days" {
   description = "Days before permanent secret deletion. Set 0 for dev to allow fast destroy."
   default     = 0
 }
+
+variable "ecs_instance_type" {
+  type        = string
+  description = "EC2 instance type for ECS hosts."
+  default     = "t3.small"
+}
+
+variable "ecs_ami_id" {
+  type        = string
+  description = "Custom AMI ID for ECS hosts. Leave empty to use latest ECS-optimised Amazon Linux 2 AMI."
+  default     = ""
+}
+
+variable "ecs_desired_capacity" {
+  type        = number
+  description = "Desired number of ECS EC2 instances."
+  default     = 1
+}
+
+variable "ecs_min_size" {
+  type        = number
+  description = "Minimum number of ECS EC2 instances."
+  default     = 1
+}
+
+variable "ecs_max_size" {
+  type        = number
+  description = "Maximum number of ECS EC2 instances."
+  default     = 3
+}
+
+variable "enable_container_insights" {
+  type        = bool
+  description = "Enable CloudWatch Container Insights on the ECS cluster."
+  default     = false
+}
