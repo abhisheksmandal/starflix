@@ -18,3 +18,9 @@ backend_port  = 4000
 
 owner       = "platform-team"
 cost_center = "eng-infra"
+
+s3_force_destroy = true
+
+domain_name = "starflix.com"
+
+enable_dns = false
