@@ -109,3 +109,30 @@ output "gateway_endpoint_id" {
   description = "S3 Gateway Endpoint."
   value       = module.vpc_endpoints.s3_gateway_endpoint_id
 }
+
+# ── S3 ─────────────────────────────────────────────────────────────────────────
+
+output "assets_bucket_name" {
+  description = "Name of the S3 assets bucket."
+  value       = module.s3.assets_bucket_name
+}
+
+output "assets_bucket_arn" {
+  description = "ARN of the S3 assets bucket."
+  value       = module.s3.assets_bucket_arn
+}
+
+output "assets_bucket_domain_name" {
+  description = "Regional domain name of the assets bucket (CloudFront origin)."
+  value       = module.s3.assets_bucket_domain_name
+}
+
+output "artifacts_bucket_name" {
+  description = "Name of the S3 artifacts bucket."
+  value       = module.s3.artifacts_bucket_name
+}
+
+output "artifacts_bucket_arn" {
+  description = "ARN of the S3 artifacts bucket."
+  value       = module.s3.artifacts_bucket_arn
+}

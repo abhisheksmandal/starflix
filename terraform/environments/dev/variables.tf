@@ -82,3 +82,9 @@ variable "cost_center" {
   description = "Cost center code for FinOps attribution."
   default     = "eng-infra"
 }
+
+variable "s3_force_destroy" {
+  type        = bool
+  description = "Allow Terraform to destroy S3 buckets even when they contain objects. Set true only for dev."
+  default     = false
+}

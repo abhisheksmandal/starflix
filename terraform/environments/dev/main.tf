@@ -82,3 +82,20 @@ module "vpc_endpoints" {
 
   tags = local.common_tags
 }
+
+############################################
+# S3
+############################################
+
+module "s3" {
+  source = "../../modules/s3"
+
+  name_prefix    = local.name_prefix
+  aws_account_id = data.aws_caller_identity.current.account_id
+  aws_region     = var.aws_region
+
+  assets_bucket_force_destroy    = var.s3_force_destroy
+  artifacts_bucket_force_destroy = var.s3_force_destroy
+
+  tags = local.common_tags
+}
