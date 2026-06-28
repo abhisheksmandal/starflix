@@ -224,3 +224,14 @@ variable "cloudwatch_response_time_threshold" {
   description = "ALB target response time in seconds threshold for CloudWatch alarm."
   default     = 5
 }
+
+variable "github_repo_url" {
+  type        = string
+  description = "HTTPS URL of the GitHub repository. Example: https://github.com/org/starflix."
+}
+
+variable "github_branch" {
+  type        = string
+  description = "Git branch CodeBuild builds from."
+  default     = "main"
+}

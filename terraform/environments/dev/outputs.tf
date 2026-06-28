@@ -289,3 +289,15 @@ output "cloudwatch_dashboard_name" {
   description = "CloudWatch dashboard name."
   value       = module.cloudwatch.dashboard_name
 }
+
+# ── CodeBuild ──────────────────────────────────────────────────────────────────
+
+output "frontend_codebuild_project" {
+  description = "Name of the frontend CodeBuild project."
+  value       = module.codebuild.frontend_project_name
+}
+
+output "backend_codebuild_project" {
+  description = "Name of the backend CodeBuild project."
+  value       = module.codebuild.backend_project_name
+}

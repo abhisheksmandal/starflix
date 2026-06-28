@@ -333,3 +333,32 @@ module "cloudwatch" {
 
   tags = local.common_tags
 }
+
+############################################
+# CodeBuild
+############################################
+
+module "codebuild" {
+  source = "../../modules/codebuild"
+
+  name_prefix = local.name_prefix
+
+  codebuild_role_arn    = module.iam.codebuild_role_arn
+  artifacts_bucket_name = module.s3.artifacts_bucket_name
+
+  github_repo_url         = var.github_repo_url
+  github_branch           = var.github_branch
+  github_token_secret_arn = module.secrets.github_token_arn
+
+  frontend_repo_url = module.ecr.frontend_repository_url
+  backend_repo_url  = module.ecr.backend_repository_url
+
+  frontend_cluster_name = module.ecs_cluster.cluster_name
+  frontend_service_name = module.ecs_service_frontend.service_name
+  backend_service_name  = module.ecs_service_backend.service_name
+
+  aws_region     = var.aws_region
+  aws_account_id = data.aws_caller_identity.current.account_id
+
+  tags = local.common_tags
+}
