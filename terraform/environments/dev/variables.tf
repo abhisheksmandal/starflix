@@ -200,3 +200,27 @@ variable "log_retention_days" {
   description = "CloudWatch log retention in days for ECS services."
   default     = 7
 }
+
+variable "cloudwatch_cpu_threshold" {
+  type        = number
+  description = "ECS CPU % threshold for CloudWatch alarm."
+  default     = 80
+}
+
+variable "cloudwatch_memory_threshold" {
+  type        = number
+  description = "ECS memory % threshold for CloudWatch alarm."
+  default     = 80
+}
+
+variable "cloudwatch_5xx_threshold" {
+  type        = number
+  description = "ALB 5xx error count per minute threshold for CloudWatch alarm."
+  default     = 10
+}
+
+variable "cloudwatch_response_time_threshold" {
+  type        = number
+  description = "ALB target response time in seconds threshold for CloudWatch alarm."
+  default     = 5
+}

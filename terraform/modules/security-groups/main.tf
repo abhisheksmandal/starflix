@@ -120,3 +120,25 @@ resource "aws_vpc_security_group_ingress_rule" "endpoint_from_ecs" {
   to_port                      = 443
   referenced_security_group_id = aws_security_group.ecs.id
 }
+
+# ── ECS Dynamic Port Mapping ───────────────────────────────────────────────────
+# EC2 bridge mode assigns random ephemeral ports (32768-65535) on the host.
+# ALB needs to reach these ports to forward traffic to containers.
+
+resource "aws_vpc_security_group_ingress_rule" "ecs_from_alb_ephemeral" {
+  security_group_id            = aws_security_group.ecs.id
+  description                  = "Ephemeral ports for ECS dynamic port mapping (bridge mode)"
+  ip_protocol                  = "tcp"
+  from_port                    = 32768
+  to_port                      = 65535
+  referenced_security_group_id = aws_security_group.alb.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_ecs_ephemeral" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "Ephemeral ports outbound from ALB to ECS dynamic port mapping"
+  ip_protocol                  = "tcp"
+  from_port                    = 32768
+  to_port                      = 65535
+  referenced_security_group_id = aws_security_group.ecs.id
+}

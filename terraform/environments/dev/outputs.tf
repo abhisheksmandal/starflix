@@ -277,3 +277,15 @@ output "backend_log_group_name" {
   description = "CloudWatch log group for the backend service."
   value       = module.ecs_service_backend.log_group_name
 }
+
+# ── CloudWatch ─────────────────────────────────────────────────────────────────
+
+output "cloudwatch_dashboard_url" {
+  description = "CloudWatch dashboard URL."
+  value       = module.cloudwatch.dashboard_url
+}
+
+output "cloudwatch_dashboard_name" {
+  description = "CloudWatch dashboard name."
+  value       = module.cloudwatch.dashboard_name
+}

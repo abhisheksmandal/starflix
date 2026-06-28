@@ -307,3 +307,29 @@ module "ecs_service_backend" {
 
   tags = local.common_tags
 }
+
+############################################
+# CloudWatch
+############################################
+
+module "cloudwatch" {
+  source = "../../modules/cloudwatch"
+
+  name_prefix = local.name_prefix
+
+  cluster_name          = module.ecs_cluster.cluster_name
+  frontend_service_name = module.ecs_service_frontend.service_name
+  backend_service_name  = module.ecs_service_backend.service_name
+
+  frontend_alb_arn_suffix = module.alb.frontend_alb_arn_suffix
+  backend_alb_arn_suffix  = module.alb.backend_alb_arn_suffix
+  frontend_tg_arn_suffix  = module.alb.frontend_target_group_arn_suffix
+  backend_tg_arn_suffix   = module.alb.backend_target_group_arn_suffix
+
+  cpu_threshold               = var.cloudwatch_cpu_threshold
+  memory_threshold            = var.cloudwatch_memory_threshold
+  alb_5xx_threshold           = var.cloudwatch_5xx_threshold
+  alb_response_time_threshold = var.cloudwatch_response_time_threshold
+
+  tags = local.common_tags
+}
