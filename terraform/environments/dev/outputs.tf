@@ -228,3 +228,20 @@ output "ecs_autoscaling_group_name" {
   description = "Name of the ECS Auto Scaling Group."
   value       = module.ecs_cluster.autoscaling_group_name
 }
+
+# ── CloudFront ─────────────────────────────────────────────────────────────────
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID."
+  value       = local.features.enable_cloudfront ? module.cloudfront[0].distribution_id : null
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain name. Point starflix.com, www and api CNAME records here."
+  value       = local.features.enable_cloudfront ? module.cloudfront[0].distribution_domain_name : null
+}
+
+output "cloudfront_distribution_arn" {
+  description = "CloudFront distribution ARN."
+  value       = local.features.enable_cloudfront ? module.cloudfront[0].distribution_arn : null
+}

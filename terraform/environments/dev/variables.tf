@@ -146,3 +146,15 @@ variable "enable_container_insights" {
   description = "Enable CloudWatch Container Insights on the ECS cluster."
   default     = false
 }
+
+variable "enable_cloudfront" {
+  type        = bool
+  description = "Deploy CloudFront distribution. Disable for dev to save cost."
+  default     = false
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "Attach WAF ACL to CloudFront. Prod only."
+  default     = false
+}

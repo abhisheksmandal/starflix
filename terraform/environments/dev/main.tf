@@ -173,3 +173,28 @@ module "ecs_cluster" {
 
   tags = local.common_tags
 }
+
+############################################
+# CloudFront
+############################################
+
+module "cloudfront" {
+  source = "../../modules/cloudfront"
+  count  = local.features.enable_cloudfront ? 1 : 0
+
+  name_prefix = local.name_prefix
+  domain_name = var.domain_name
+
+  acm_certificate_arn = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
+
+  frontend_alb_dns_name     = module.alb.frontend_alb_dns_name
+  backend_alb_dns_name      = module.alb.backend_alb_dns_name
+  assets_bucket_name        = module.s3.assets_bucket_name
+  assets_bucket_domain_name = module.s3.assets_bucket_domain_name
+
+  backend_port = var.backend_port
+
+  enable_waf = var.enable_waf
+
+  tags = local.common_tags
+}

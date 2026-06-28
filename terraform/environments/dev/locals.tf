@@ -28,5 +28,6 @@ locals {
   features = {
     single_nat_gateway = var.single_nat_gateway
     enable_dns         = var.enable_dns
+    enable_cloudfront  = var.enable_cloudfront
   }
 }
