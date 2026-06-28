@@ -360,3 +360,39 @@ resource "aws_iam_role_policy_attachment" "codebuild" {
 
   policy_arn = aws_iam_policy.codebuild.arn
 }
+
+############################################
+# ECS Task Execution — Secrets Policy
+# Allows ECS agent to fetch Secrets Manager
+# and SSM values at container start time.
+# Separate from the task role — this is the
+# exec role used by the ECS agent itself.
+############################################
+
+data "aws_iam_policy_document" "ecs_task_exec_secrets" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "ssm:GetParameter",
+      "ssm:GetParameters"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "ecs_task_exec_secrets" {
+  name   = "${var.name_prefix}-ecs-task-exec-secrets-policy"
+  policy = data.aws_iam_policy_document.ecs_task_exec_secrets.json
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-ecs-task-exec-secrets-policy"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_exec_secrets" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = aws_iam_policy.ecs_task_exec_secrets.arn
+}

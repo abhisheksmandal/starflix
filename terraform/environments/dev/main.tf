@@ -198,3 +198,112 @@ module "cloudfront" {
 
   tags = local.common_tags
 }
+
+############################################
+# ECS Service — Frontend (Node.js)
+############################################
+
+module "ecs_service_frontend" {
+  source = "../../modules/ecs-service"
+
+  name_prefix    = local.name_prefix
+  service_name   = "frontend"
+  cluster_id     = module.ecs_cluster.cluster_id
+  cluster_name   = module.ecs_cluster.cluster_name
+
+  capacity_provider_name  = module.ecs_cluster.capacity_provider_name
+  task_execution_role_arn = module.iam.ecs_task_execution_role_arn
+  task_role_arn           = module.iam.ecs_task_role_arn
+
+  container_image = "${module.ecr.frontend_repository_url}:${var.frontend_image_tag}"
+  container_port  = var.frontend_port
+
+  cpu           = var.frontend_cpu
+  memory        = var.frontend_memory
+  desired_count = var.ecs_desired_capacity
+
+  target_group_arn = module.alb.frontend_target_group_arn
+
+  environment_variables = [
+    {
+      name  = "NODE_ENV"
+      value = var.environment
+    },
+    {
+      name  = "PORT"
+      value = tostring(var.frontend_port)
+    },
+    {
+      name  = "BACKEND_URL"
+      value = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
+    }
+  ]
+
+  log_retention_days = var.log_retention_days
+
+  tags = local.common_tags
+}
+
+############################################
+# ECS Service — Backend (Strapi)
+############################################
+
+module "ecs_service_backend" {
+  source = "../../modules/ecs-service"
+
+  name_prefix    = local.name_prefix
+  service_name   = "backend"
+  cluster_id     = module.ecs_cluster.cluster_id
+  cluster_name   = module.ecs_cluster.cluster_name
+
+  capacity_provider_name  = module.ecs_cluster.capacity_provider_name
+  task_execution_role_arn = module.iam.ecs_task_execution_role_arn
+  task_role_arn           = module.iam.ecs_task_role_arn
+
+  container_image = "${module.ecr.backend_repository_url}:${var.backend_image_tag}"
+  container_port  = var.backend_port
+
+  cpu           = var.backend_cpu
+  memory        = var.backend_memory
+  desired_count = var.ecs_desired_capacity
+
+  target_group_arn = module.alb.backend_target_group_arn
+
+  environment_variables = [
+    {
+      name  = "NODE_ENV"
+      value = var.environment
+    },
+    {
+      name  = "PORT"
+      value = tostring(var.backend_port)
+    }
+  ]
+
+  secret_arns = [
+    {
+      name      = "APP_KEYS"
+      valueFrom = module.secrets.strapi_app_keys_arn
+    },
+    {
+      name      = "JWT_SECRET"
+      valueFrom = module.secrets.strapi_jwt_secret_arn
+    },
+    {
+      name      = "API_TOKEN_SALT"
+      valueFrom = module.secrets.strapi_api_token_salt_arn
+    },
+    {
+      name      = "ADMIN_JWT_SECRET"
+      valueFrom = module.secrets.strapi_admin_jwt_secret_arn
+    },
+    {
+      name      = "TMDB_API_KEY"
+      valueFrom = module.secrets.tmdb_api_key_arn
+    }
+  ]
+
+  log_retention_days = var.log_retention_days
+
+  tags = local.common_tags
+}

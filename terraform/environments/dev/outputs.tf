@@ -245,3 +245,35 @@ output "cloudfront_distribution_arn" {
   description = "CloudFront distribution ARN."
   value       = local.features.enable_cloudfront ? module.cloudfront[0].distribution_arn : null
 }
+
+# ── ECS Services ───────────────────────────────────────────────────────────────
+
+output "frontend_service_name" {
+  description = "Name of the frontend ECS service."
+  value       = module.ecs_service_frontend.service_name
+}
+
+output "frontend_task_definition_arn" {
+  description = "ARN of the frontend task definition."
+  value       = module.ecs_service_frontend.task_definition_arn
+}
+
+output "frontend_log_group_name" {
+  description = "CloudWatch log group for the frontend service."
+  value       = module.ecs_service_frontend.log_group_name
+}
+
+output "backend_service_name" {
+  description = "Name of the backend ECS service."
+  value       = module.ecs_service_backend.service_name
+}
+
+output "backend_task_definition_arn" {
+  description = "ARN of the backend task definition."
+  value       = module.ecs_service_backend.task_definition_arn
+}
+
+output "backend_log_group_name" {
+  description = "CloudWatch log group for the backend service."
+  value       = module.ecs_service_backend.log_group_name
+}

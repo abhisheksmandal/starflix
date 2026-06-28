@@ -158,3 +158,45 @@ variable "enable_waf" {
   description = "Attach WAF ACL to CloudFront. Prod only."
   default     = false
 }
+
+variable "frontend_image_tag" {
+  type        = string
+  description = "Docker image tag for the frontend container."
+  default     = "latest"
+}
+
+variable "backend_image_tag" {
+  type        = string
+  description = "Docker image tag for the backend container."
+  default     = "latest"
+}
+
+variable "frontend_cpu" {
+  type        = number
+  description = "CPU units for the frontend task (256 = 0.25 vCPU)."
+  default     = 256
+}
+
+variable "frontend_memory" {
+  type        = number
+  description = "Memory in MiB for the frontend task."
+  default     = 512
+}
+
+variable "backend_cpu" {
+  type        = number
+  description = "CPU units for the backend (Strapi) task."
+  default     = 256
+}
+
+variable "backend_memory" {
+  type        = number
+  description = "Memory in MiB for the backend (Strapi) task."
+  default     = 768
+}
+
+variable "log_retention_days" {
+  type        = number
+  description = "CloudWatch log retention in days for ECS services."
+  default     = 7
+}

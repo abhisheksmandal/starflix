@@ -1,7 +1,11 @@
 ############################################
 # Frontend ALB
-# Public-facing; serves React/nginx on
-# port 80 (redirect) and 443 (HTTPS).
+# Public-facing; serves Node.js frontend.
+# When acm_certificate_arn is null (dev):
+#   port 80 → forward to target group
+# When acm_certificate_arn is set (prod):
+#   port 80 → 301 redirect to HTTPS
+#   port 443 → forward to target group
 ############################################
 
 resource "aws_lb" "frontend" {
@@ -47,20 +51,32 @@ resource "aws_lb_target_group" "frontend" {
   })
 }
 
-# ── Frontend HTTP Listener — redirect to HTTPS ─────────────────────────────────
+# ── Frontend HTTP Listener ─────────────────────────────────────────────────────
+# When no cert: forward directly to target group (dev).
+# When cert present: redirect to HTTPS (stage/prod).
 
 resource "aws_lb_listener" "frontend_http" {
   load_balancer_arn = aws_lb.frontend.arn
   port              = 80
   protocol          = "HTTP"
 
-  default_action {
-    type = "redirect"
+  dynamic "default_action" {
+    for_each = var.acm_certificate_arn == null ? [1] : []
+    content {
+      type             = "forward"
+      target_group_arn = aws_lb_target_group.frontend.arn
+    }
+  }
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+  dynamic "default_action" {
+    for_each = var.acm_certificate_arn != null ? [1] : []
+    content {
+      type = "redirect"
+      redirect {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
     }
   }
 
@@ -95,8 +111,8 @@ resource "aws_lb_listener" "frontend_https" {
 
 ############################################
 # Backend ALB
-# Public-facing; serves Express API on
-# port 4000 directly from the internet.
+# Internal-facing; serves Strapi API.
+# HTTP only — CloudFront terminates TLS.
 ############################################
 
 resource "aws_lb" "backend" {
@@ -143,7 +159,6 @@ resource "aws_lb_target_group" "backend" {
 }
 
 # ── Backend HTTP Listener ──────────────────────────────────────────────────────
-# Internal ALB uses HTTP only — traffic stays within the VPC security boundary.
 
 resource "aws_lb_listener" "backend_http" {
   load_balancer_arn = aws_lb.backend.arn
