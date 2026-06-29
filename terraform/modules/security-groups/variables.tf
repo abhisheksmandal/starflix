@@ -12,12 +12,22 @@ variable "frontend_port" {
   type        = number
   description = "Container port the frontend (nginx) listens on. ALB egress and ECS ingress are scoped to this port."
   default     = 80
+
+  validation {
+    condition     = var.frontend_port > 0 && var.frontend_port < 65536
+    error_message = "frontend_port must be between 1 and 65535."
+  }
 }
 
 variable "backend_port" {
   type        = number
   description = "Container port the backend (Express API) listens on. ALB egress and ECS ingress are scoped to this port."
   default     = 4000
+
+  validation {
+    condition     = var.backend_port > 0 && var.backend_port < 65536
+    error_message = "backend_port must be between 1 and 65535."
+  }
 }
 
 variable "tags" {

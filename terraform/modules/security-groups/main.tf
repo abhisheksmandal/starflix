@@ -71,6 +71,10 @@ resource "aws_security_group" "ecs" {
   })
 }
 
+# IMPORTANT:
+# ECS tasks must only receive traffic from ALB security group.
+# Never replace referenced_security_group_id with cidr_ipv4 = "0.0.0.0/0".
+
 resource "aws_vpc_security_group_ingress_rule" "ecs_from_alb_frontend" {
   security_group_id            = aws_security_group.ecs.id
   description                  = "Frontend container port inbound from ALB"
@@ -119,6 +123,18 @@ resource "aws_vpc_security_group_ingress_rule" "endpoint_from_ecs" {
   from_port                    = 443
   to_port                      = 443
   referenced_security_group_id = aws_security_group.ecs.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "endpoint_https_out" {
+  security_group_id = aws_security_group.vpc_endpoints.id
+
+  description = "HTTPS response traffic from VPC endpoints"
+
+  ip_protocol = "tcp"
+  from_port   = 443
+  to_port     = 443
+
+  cidr_ipv4 = "0.0.0.0/0"
 }
 
 # ── ECS Dynamic Port Mapping ───────────────────────────────────────────────────
