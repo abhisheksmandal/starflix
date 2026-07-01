@@ -182,25 +182,25 @@ output "tmdb_api_key_arn" {
   value       = module.secrets.tmdb_api_key_arn
 }
 
-output "strapi_app_keys_arn" {
-  description = "ARN of the Strapi APP_KEYS secret."
-  value       = module.secrets.strapi_app_keys_arn
-}
-
-output "strapi_jwt_secret_arn" {
-  description = "ARN of the Strapi JWT_SECRET."
-  value       = module.secrets.strapi_jwt_secret_arn
-}
-
-output "strapi_api_token_salt_arn" {
-  description = "ARN of the Strapi API_TOKEN_SALT secret."
-  value       = module.secrets.strapi_api_token_salt_arn
-}
-
-output "strapi_admin_jwt_secret_arn" {
-  description = "ARN of the Strapi ADMIN_JWT_SECRET."
-  value       = module.secrets.strapi_admin_jwt_secret_arn
-}
+# output "strapi_app_keys_arn" {
+#   description = "ARN of the Strapi APP_KEYS secret."
+#   value       = module.secrets.strapi_app_keys_arn
+# }
+# 
+# output "strapi_jwt_secret_arn" {
+#   description = "ARN of the Strapi JWT_SECRET."
+#   value       = module.secrets.strapi_jwt_secret_arn
+# }
+# 
+# output "strapi_api_token_salt_arn" {
+#   description = "ARN of the Strapi API_TOKEN_SALT secret."
+#   value       = module.secrets.strapi_api_token_salt_arn
+# }
+# 
+# output "strapi_admin_jwt_secret_arn" {
+#   description = "ARN of the Strapi ADMIN_JWT_SECRET."
+#   value       = module.secrets.strapi_admin_jwt_secret_arn
+# }
 
 output "github_token_arn" {
   description = "ARN of the GitHub token secret for CodeBuild."
