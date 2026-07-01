@@ -235,7 +235,7 @@ module "ecs_service_frontend" {
     },
     {
       name  = "BACKEND_URL"
-      value = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}/api"
+      value = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
     }
   ]
 
