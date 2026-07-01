@@ -29,73 +29,55 @@ resource "aws_secretsmanager_secret" "tmdb_api_key" {
   })
 }
 
-############################################
-# Strapi App Keys
-# Comma-separated list of secrets used by
-# Strapi for session signing.
-############################################
-
-resource "aws_secretsmanager_secret" "strapi_app_keys" {
-  name                    = "${local.secret_path}/strapi-app-keys"
-  description             = "Strapi APP_KEYS — comma-separated signing secrets. Set value out-of-band."
-  recovery_window_in_days = var.recovery_window_days
-
-  tags = merge(var.tags, {
-    Name    = "${var.name_prefix}-strapi-app-keys"
-    Service = "backend"
-  })
-}
-
-############################################
-# Strapi JWT Secret
-# Used to sign user-facing JWTs issued
-# by the Strapi Users & Permissions plugin.
-############################################
-
-resource "aws_secretsmanager_secret" "strapi_jwt_secret" {
-  name                    = "${local.secret_path}/strapi-jwt-secret"
-  description             = "Strapi JWT_SECRET for user token signing. Set value out-of-band."
-  recovery_window_in_days = var.recovery_window_days
-
-  tags = merge(var.tags, {
-    Name    = "${var.name_prefix}-strapi-jwt-secret"
-    Service = "backend"
-  })
-}
-
-############################################
-# Strapi API Token Salt
-# Used to hash API tokens generated in
-# the Strapi admin panel.
-############################################
-
-resource "aws_secretsmanager_secret" "strapi_api_token_salt" {
-  name                    = "${local.secret_path}/strapi-api-token-salt"
-  description             = "Strapi API_TOKEN_SALT for hashing API tokens. Set value out-of-band."
-  recovery_window_in_days = var.recovery_window_days
-
-  tags = merge(var.tags, {
-    Name    = "${var.name_prefix}-strapi-api-token-salt"
-    Service = "backend"
-  })
-}
-
-############################################
-# Strapi Admin JWT Secret
-# Used to sign admin panel JWTs — separate
-# from user JWTs for least-privilege.
-############################################
-
-resource "aws_secretsmanager_secret" "strapi_admin_jwt_secret" {
-  name                    = "${local.secret_path}/strapi-admin-jwt-secret"
-  description             = "Strapi ADMIN_JWT_SECRET for admin panel token signing. Set value out-of-band."
-  recovery_window_in_days = var.recovery_window_days
-
-  tags = merge(var.tags, {
-    Name    = "${var.name_prefix}-strapi-admin-jwt-secret"
-    Service = "backend"
-  })
-}
+# ############################################
+# # DEMO/REFERENCE ONLY: Unused Strapi Secrets
+# # (Commented out to prevent AWS billing of unused resources.
+# #  Uncomment and customize if adding these or similar secrets in the future.)
+# # ############################################
+#
+# # resource "aws_secretsmanager_secret" "strapi_app_keys" {
+# #   name                    = "${local.secret_path}/strapi-app-keys"
+# #   description             = "Strapi APP_KEYS — comma-separated signing secrets. Set value out-of-band."
+# #   recovery_window_in_days = var.recovery_window_days
+# # 
+# #   tags = merge(var.tags, {
+# #     Name    = "${var.name_prefix}-strapi-app-keys"
+# #     Service = "backend"
+# #   })
+# # }
+# # 
+# # resource "aws_secretsmanager_secret" "strapi_jwt_secret" {
+# #   name                    = "${local.secret_path}/strapi-jwt-secret"
+# #   description             = "Strapi JWT_SECRET for user token signing. Set value out-of-band."
+# #   recovery_window_in_days = var.recovery_window_days
+# # 
+# #   tags = merge(var.tags, {
+# #     Name    = "${var.name_prefix}-strapi-jwt-secret"
+# #     Service = "backend"
+# #   })
+# # }
+# # 
+# # resource "aws_secretsmanager_secret" "strapi_api_token_salt" {
+# #   name                    = "${local.secret_path}/strapi-api-token-salt"
+# #   description             = "Strapi API_TOKEN_SALT for hashing API tokens. Set value out-of-band."
+# #   recovery_window_in_days = var.recovery_window_days
+# # 
+# #   tags = merge(var.tags, {
+# #     Name    = "${var.name_prefix}-strapi-api-token-salt"
+# #     Service = "backend"
+# #   })
+# # }
+# # 
+# # resource "aws_secretsmanager_secret" "strapi_admin_jwt_secret" {
+# #   name                    = "${local.secret_path}/strapi-admin-jwt-secret"
+# #   description             = "Strapi ADMIN_JWT_SECRET for admin panel token signing. Set value out-of-band."
+# #   recovery_window_in_days = var.recovery_window_days
+# # 
+# #   tags = merge(var.tags, {
+# #     Name    = "${var.name_prefix}-strapi-admin-jwt-secret"
+# #     Service = "backend"
+# #   })
+# # }
 
 ############################################
 # GitHub Token

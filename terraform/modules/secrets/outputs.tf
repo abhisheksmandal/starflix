@@ -8,25 +8,25 @@ output "tmdb_api_key_arn" {
   value       = aws_secretsmanager_secret.tmdb_api_key.arn
 }
 
-output "strapi_app_keys_arn" {
-  description = "ARN of the Strapi APP_KEYS secret. Pass to backend ECS task definition."
-  value       = aws_secretsmanager_secret.strapi_app_keys.arn
-}
-
-output "strapi_jwt_secret_arn" {
-  description = "ARN of the Strapi JWT_SECRET. Pass to backend ECS task definition."
-  value       = aws_secretsmanager_secret.strapi_jwt_secret.arn
-}
-
-output "strapi_api_token_salt_arn" {
-  description = "ARN of the Strapi API_TOKEN_SALT secret. Pass to backend ECS task definition."
-  value       = aws_secretsmanager_secret.strapi_api_token_salt.arn
-}
-
-output "strapi_admin_jwt_secret_arn" {
-  description = "ARN of the Strapi ADMIN_JWT_SECRET. Pass to backend ECS task definition."
-  value       = aws_secretsmanager_secret.strapi_admin_jwt_secret.arn
-}
+# output "strapi_app_keys_arn" {
+#   description = "ARN of the Strapi APP_KEYS secret. Pass to backend ECS task definition."
+#   value       = aws_secretsmanager_secret.strapi_app_keys.arn
+# }
+# 
+# output "strapi_jwt_secret_arn" {
+#   description = "ARN of the Strapi JWT_SECRET. Pass to backend ECS task definition."
+#   value       = aws_secretsmanager_secret.strapi_jwt_secret.arn
+# }
+# 
+# output "strapi_api_token_salt_arn" {
+#   description = "ARN of the Strapi API_TOKEN_SALT secret. Pass to backend ECS task definition."
+#   value       = aws_secretsmanager_secret.strapi_api_token_salt.arn
+# }
+# 
+# output "strapi_admin_jwt_secret_arn" {
+#   description = "ARN of the Strapi ADMIN_JWT_SECRET. Pass to backend ECS task definition."
+#   value       = aws_secretsmanager_secret.strapi_admin_jwt_secret.arn
+# }
 
 output "github_token_arn" {
   description = "ARN of the GitHub token secret. Pass to CodeBuild module."
