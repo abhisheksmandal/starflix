@@ -170,6 +170,8 @@ resource "aws_autoscaling_group" "this" {
   min_size         = var.min_size
   max_size         = var.max_size
 
+  force_delete = true
+
   vpc_zone_identifier = var.private_subnet_ids
 
   launch_template {
