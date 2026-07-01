@@ -249,3 +249,42 @@ resource "aws_iam_role_policy_attachment" "codebuild_ecs_deploy" {
   role       = split("/", var.codebuild_role_arn)[1]
   policy_arn = aws_iam_policy.codebuild_ecs_deploy.arn
 }
+
+############################################
+# CodeBuild Webhooks — Auto Build & Deploy
+# Triggers on git pushes to the main branch
+############################################
+
+resource "aws_codebuild_webhook" "frontend" {
+  project_name = aws_codebuild_project.frontend.name
+  build_type   = "BUILD"
+
+  filter_group {
+    filter {
+      type    = "EVENT"
+      pattern = "PUSH"
+    }
+
+    filter {
+      type    = "HEAD_REF"
+      pattern = "^refs/heads/main$"
+    }
+  }
+}
+
+resource "aws_codebuild_webhook" "backend" {
+  project_name = aws_codebuild_project.backend.name
+  build_type   = "BUILD"
+
+  filter_group {
+    filter {
+      type    = "EVENT"
+      pattern = "PUSH"
+    }
+
+    filter {
+      type    = "HEAD_REF"
+      pattern = "^refs/heads/main$"
+    }
+  }
+}
