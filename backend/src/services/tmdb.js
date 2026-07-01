@@ -8,13 +8,14 @@ const TMDB_IMAGE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE   = "w500";
 const BACKDROP_SIZE = "w1280";
 
-async function fetchImages(tmdbId) {
+async function fetchImages(tmdbId, type = "movie") {
   const key = process.env.TMDB_API_KEY;
   if (!key || !tmdbId) return null;
 
   try {
+    const endpointType = type === "show" ? "tv" : "movie";
     const res = await fetch(
-      `${TMDB_API}/movie/${tmdbId}?api_key=${key}&language=en-US`,
+      `${TMDB_API}/${endpointType}/${tmdbId}?api_key=${key}&language=en-US`,
       { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return null;
@@ -37,7 +38,7 @@ async function enrichWithTMDB(items) {
   if (!key) return items;
 
   const results = await Promise.allSettled(
-    items.map((item) => fetchImages(item.tmdbId))
+    items.map((item) => fetchImages(item.tmdbId, item.type))
   );
 
   return items.map((item, i) => {

@@ -15,7 +15,7 @@ services:
     networks:
       - starflix-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 20s
       timeout: 5s
       retries: 3
@@ -26,11 +26,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: "/api"
+        VITE_API_URL: ""
     container_name: starflix-frontend
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:4000/
+      BACKEND_URL: http://backend:4000
     ports:
       - "3000:80"
     depends_on:
