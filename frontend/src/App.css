@@ -83,3 +83,17 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+  .app__rows {
+    margin-top: -40px;
+    padding-bottom: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app__rows {
+    margin-top: -20px;
+  }
+}
+

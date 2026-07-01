@@ -62,3 +62,14 @@
 .content-row__arrow--right {
   right: -36px;
 }
+
+@media (max-width: 768px) {
+  .content-row__arrow {
+    display: none;
+  }
+
+  .content-row {
+    margin-bottom: 1.5rem;
+  }
+}
+

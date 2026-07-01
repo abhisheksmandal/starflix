@@ -4,12 +4,20 @@ import "./Navbar.css";
 export default function Navbar({ onSearch, searchQuery }) {
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const closeMenu = () => setMobileMenuOpen(false);
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, [mobileMenuOpen]);
 
   function handleSearchChange(e) {
     onSearch(e.target.value);
@@ -18,6 +26,11 @@ export default function Navbar({ onSearch, searchQuery }) {
   function toggleSearch() {
     setSearchOpen((v) => !v);
     if (searchOpen) onSearch("");
+  }
+
+  function toggleMobileMenu(e) {
+    e.stopPropagation();
+    setMobileMenuOpen((v) => !v);
   }
 
   return (
@@ -34,6 +47,20 @@ export default function Navbar({ onSearch, searchQuery }) {
           <li className="navbar__link">New &amp; Popular</li>
           <li className="navbar__link">My List</li>
         </ul>
+        <div className="navbar__mobile-nav">
+          <button className="navbar__mobile-btn" onClick={toggleMobileMenu} aria-label="Browse Categories">
+            Browse <span className={`navbar__mobile-arrow ${mobileMenuOpen ? "navbar__mobile-arrow--open" : ""}`}>▼</span>
+          </button>
+          {mobileMenuOpen && (
+            <ul className="navbar__mobile-menu">
+              <li className="navbar__mobile-link navbar__mobile-link--active">Home</li>
+              <li className="navbar__mobile-link">Movies</li>
+              <li className="navbar__mobile-link">TV Shows</li>
+              <li className="navbar__mobile-link">New &amp; Popular</li>
+              <li className="navbar__mobile-link">My List</li>
+            </ul>
+          )}
+        </div>
       </div>
       <div className="navbar__right">
         <div className={`navbar__search ${searchOpen ? "navbar__search--open" : ""}`}>

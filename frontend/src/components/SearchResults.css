@@ -39,3 +39,17 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+  .search-results {
+    padding: calc(var(--nav-height) + 1.5rem) 4% 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-results__grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+}
+

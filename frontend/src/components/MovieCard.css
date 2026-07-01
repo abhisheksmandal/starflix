@@ -153,3 +153,19 @@
 .movie-card:hover .movie-card__title {
   color: var(--text-primary);
 }
+
+@media (max-width: 768px) {
+  .movie-card {
+    width: 150px;
+  }
+
+  .movie-card__title {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-card {
+    width: 130px;
+  }
+}
