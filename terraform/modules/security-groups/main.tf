@@ -29,6 +29,18 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "alb_backend_http" {
+  security_group_id = aws_security_group.alb.id
+
+  description = "Backend HTTP from internet"
+
+  ip_protocol = "tcp"
+  from_port   = var.backend_port
+  to_port     = var.backend_port
+
+  cidr_ipv4 = "0.0.0.0/0"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   security_group_id = aws_security_group.alb.id
   description       = "HTTP from internet - ALB listener rule redirects to HTTPS"

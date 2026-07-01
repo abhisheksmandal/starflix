@@ -142,9 +142,9 @@ module "alb" {
 module "secrets" {
   source = "../../modules/secrets"
 
-  name_prefix  = local.name_prefix
-  project      = var.project
-  environment  = var.environment
+  name_prefix = local.name_prefix
+  project     = var.project
+  environment = var.environment
 
   recovery_window_days = var.secrets_recovery_window_days
 
@@ -206,10 +206,10 @@ module "cloudfront" {
 module "ecs_service_frontend" {
   source = "../../modules/ecs-service"
 
-  name_prefix    = local.name_prefix
-  service_name   = "frontend"
-  cluster_id     = module.ecs_cluster.cluster_id
-  cluster_name   = module.ecs_cluster.cluster_name
+  name_prefix  = local.name_prefix
+  service_name = "frontend"
+  cluster_id   = module.ecs_cluster.cluster_id
+  cluster_name = module.ecs_cluster.cluster_name
 
   capacity_provider_name  = module.ecs_cluster.capacity_provider_name
   task_execution_role_arn = module.iam.ecs_task_execution_role_arn
@@ -235,7 +235,7 @@ module "ecs_service_frontend" {
     },
     {
       name  = "BACKEND_URL"
-      value = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
+      value = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}/api"
     }
   ]
 
@@ -251,10 +251,10 @@ module "ecs_service_frontend" {
 module "ecs_service_backend" {
   source = "../../modules/ecs-service"
 
-  name_prefix    = local.name_prefix
-  service_name   = "backend"
-  cluster_id     = module.ecs_cluster.cluster_id
-  cluster_name   = module.ecs_cluster.cluster_name
+  name_prefix  = local.name_prefix
+  service_name = "backend"
+  cluster_id   = module.ecs_cluster.cluster_id
+  cluster_name = module.ecs_cluster.cluster_name
 
   capacity_provider_name  = module.ecs_cluster.capacity_provider_name
   task_execution_role_arn = module.iam.ecs_task_execution_role_arn
@@ -277,26 +277,14 @@ module "ecs_service_backend" {
     {
       name  = "PORT"
       value = tostring(var.backend_port)
+    },
+    {
+    name  = "FRONTEND_URL"
+    value = "http://${module.alb.frontend_alb_dns_name}"
     }
   ]
 
   secret_arns = [
-    {
-      name      = "APP_KEYS"
-      valueFrom = module.secrets.strapi_app_keys_arn
-    },
-    {
-      name      = "JWT_SECRET"
-      valueFrom = module.secrets.strapi_jwt_secret_arn
-    },
-    {
-      name      = "API_TOKEN_SALT"
-      valueFrom = module.secrets.strapi_api_token_salt_arn
-    },
-    {
-      name      = "ADMIN_JWT_SECRET"
-      valueFrom = module.secrets.strapi_admin_jwt_secret_arn
-    },
     {
       name      = "TMDB_API_KEY"
       valueFrom = module.secrets.tmdb_api_key_arn

@@ -114,7 +114,7 @@ resource "aws_ecs_service" "this" {
   health_check_grace_period_seconds = 60
 
   lifecycle {
-    ignore_changes = [desired_count, task_definition]
+    ignore_changes = [desired_count]
   }
 
   tags = merge(var.tags, {
