@@ -2,6 +2,67 @@
 
 > Production-ready infrastructure design for the Starflix streaming platform.
 > AWS region: `ap-south-1`. Compute: ECS EC2 Launch Type. CI/CD: GitHub + CodeBuild.
+>
+> This document describes the **full target design** (dev / stage / prod). Much of the
+> CDN / DNS / WAF / multi-AZ content is flag-gated and not yet deployed in `dev`.
+> For what is **actually running today**, see **§0 Current Deployment Snapshot (dev)**.
+
+---
+
+## 0. Current Deployment Snapshot (dev)
+
+*Reflects the live `dev` environment as of 2026-07-02 (account `882282737240`, `ap-south-1`).*
+
+### What is deployed and working
+
+| Area | Status | Notes |
+|---|---|---|
+| VPC + 2 public / 2 private subnets | ✅ live | `10.0.0.0/16`, single shared NAT Gateway |
+| VPC interface + S3 gateway endpoints | ✅ live | ECR (api/dkr), Secrets Manager, SSM, SSM Messages, CloudWatch Logs, S3 |
+| ECS cluster (EC2 launch type) | ✅ live | `t3.small`, desired count 1 |
+| Frontend service (React/nginx, port 80) | ✅ live | behind `starflix-dev-alb-frontend` (internet-facing) |
+| Backend service (Node/Express, port 4000) | ✅ live | behind `starflix-dev-alb-backend` (internet-facing) |
+| ECR repositories (frontend, backend) | ✅ live | |
+| Secrets Manager (TMDB key, GitHub token) | ✅ live | values **Terraform-managed** (see §7) |
+| CodeBuild + per-service webhooks | ✅ live | path-filtered auto-deploy (see CI/CD note below) |
+| CloudWatch log groups, alarms, dashboard | ✅ live | |
+
+### What is designed but NOT deployed in dev (flag-gated off)
+
+| Component | Flag | Reason |
+|---|---|---|
+| CloudFront CDN | `enable_cloudfront = false` | not needed for dev iteration |
+| Route 53 / ACM / custom domain | `enable_dns = false` | traffic uses raw ALB DNS names over **HTTP** |
+| HTTPS / 443 listeners | (depends on ACM) | ALBs currently serve **HTTP only** (frontend :80, backend :4000) |
+| WAF | `enable_waf = false` | prod-only |
+| ALB deletion protection | `enable_deletion_protection = false` | dev convenience |
+| Container Insights | `enable_container_insights = false` | cost |
+
+### How frontend talks to backend (important — differs from the CDN design below)
+
+CloudFront is off in dev, and the frontend nginx cannot proxy `/api` to the
+internet-facing backend ALB from its private subnet (NAT hairpin to a same-VPC
+internet-facing ALB does not route → 504). Instead, the **public backend URL is
+baked into the SPA at build time** (`VITE_API_URL`), so the **browser calls the
+backend ALB directly**:
+
+```
+Browser ──HTTP──► starflix-dev-alb-frontend :80   → static SPA (React/nginx)
+Browser ──HTTP──► starflix-dev-alb-backend  :4000 → API (Node/Express)  [CORS-allowed]
+```
+
+Both ALBs are public, keeping the backend usable as a standalone/CMS API.
+Full root-cause and fix write-up: [`docs/frontend-backend-504-fix.md`](docs/frontend-backend-504-fix.md).
+
+### CI/CD auto-deploy (current)
+
+- GitHub push to `main` → CodeBuild via webhook → build image → push to ECR →
+  `ecs update-service --force-new-deployment`.
+- Webhooks are **path-scoped** so services deploy independently:
+  frontend builds only on `^frontend/` changes, backend only on `^backend/`.
+- CodeBuild authenticates to GitHub via a Secrets Manager token
+  (`starflix/dev/github-token`), and the frontend build receives `VITE_API_URL`
+  as a build-time env var (baked into the SPA bundle).
 
 ---
 
@@ -149,13 +210,15 @@ environments/dev (root)
 ├── module.ecr                          ← no vpc deps; global-ish
 │       outputs: frontend_repo_url, backend_repo_url
 │
-├── module.iam                          ← no vpc deps
+├── module.iam                          ← depends on: module.secrets (github_token_secret_arn)
+│       inputs:  github_token_secret_arn   # scopes CodeBuild secretsmanager:GetSecretValue
 │       outputs: ecs_task_exec_role_arn, ecs_task_role_arn,
 │                codebuild_role_arn, ecs_instance_role_arn
 │
-├── module.secrets                      ← depends on: module.iam
-│       inputs:  kms_key_arn, task_role_arn
-│       outputs: tmdb_secret_arn, db_secret_arn (future)
+├── module.secrets                      ← no module deps
+│       inputs:  tmdb_api_key, github_token  # sensitive; optional (see §7)
+│       outputs: tmdb_api_key_arn, github_token_arn,
+│                frontend_url_ssm_arn, backend_url_ssm_arn
 │
 ├── module.s3                           ← no vpc deps
 │       outputs: assets_bucket_name, artifacts_bucket_name
@@ -186,9 +249,11 @@ environments/dev (root)
 │       inputs:  alb_dns_name, assets_bucket_name, acm_cert_arn (ap-south-1)
 │       outputs: distribution_id, distribution_domain
 │
-├── module.codebuild                    ← depends on: module.ecr, module.iam, module.s3
-│       inputs:  frontend_repo_url, backend_repo_url, codebuild_role_arn,
-│                artifacts_bucket_name
+├── module.codebuild                    ← depends on: module.ecr, module.iam, module.s3,
+│       inputs:  frontend_repo_url, backend_repo_url, codebuild_role_arn,     module.secrets, module.alb
+│                artifacts_bucket_name, github_token_secret_arn,
+│                frontend_api_url (= backend ALB URL, baked as VITE_API_URL)
+│       depends_on = [module.secrets]   # webhooks need the populated GitHub token secret
 │       outputs: project_names
 │
 └── module.cloudwatch                   ← depends on: module.ecs_cluster
@@ -202,15 +267,17 @@ environments/dev (root)
 vpc → security_groups → vpc_endpoints
 vpc → alb
 vpc → ecs_cluster
-iam → secrets
+secrets → iam            (github_token_secret_arn scopes CodeBuild's secret access)
 iam → ecs_cluster
 iam → codebuild
 ecr → ecs_service_*
 ecr → codebuild
 alb → ecs_service_*
+alb → codebuild          (backend ALB URL → frontend VITE_API_URL build arg)
 alb → cloudfront
 s3  → cloudfront
 s3  → codebuild
+secrets → codebuild      (GitHub token secret for source auth + webhooks)
 dns → alb
 dns → cloudfront
 ecs_cluster → ecs_service_*
@@ -336,7 +403,7 @@ features = {
 |---|---|---|---|---|---|
 | `single_nat_gateway` | bool | `true` | `false` | `false` | 1 NAT Gateway vs 1 per AZ |
 | `enable_cloudfront` | bool | `false` | `true` | `true` | deploy CloudFront distribution |
-| `enable_vpc_endpoints` | bool | `false` | `true` | `true` | deploy ECR/SSM/CW interface endpoints |
+| VPC endpoints | (always on) | `true` | `true` | `true` | ECR/SSM/CW interface + S3 gateway endpoints — deployed in dev today |
 | `enable_waf` | bool | `false` | `false` | `true` | attach WAF ACL to CloudFront |
 | `enable_deletion_protection` | bool | `false` | `false` | `true` | ALB deletion protection |
 | `enable_container_insights` | bool | `false` | `true` | `true` | ECS Container Insights |
@@ -402,7 +469,26 @@ s3:GetBucketVersioning                        → arn:aws:s3:::starflix-tfstate-
 
 ### Sensitive State Data
 
-Secrets are never put into Terraform state as plaintext. The `secrets` module stores only the ARN of a Secrets Manager secret — the actual secret value is set out-of-band (via AWS console or CI secret injection) and managed outside Terraform.
+The `secrets` module supports **two modes** per secret:
+
+1. **Terraform-managed (current dev)** — pass the value via a `sensitive` variable
+   (`tmdb_api_key`, `github_token`, sourced from a gitignored `terraform.tfvars`
+   or `TF_VAR_*`). The module creates an `aws_secretsmanager_secret_version`, and
+   the value **does land in Terraform state**. This is acceptable here because the
+   state bucket is encrypted (SSE-S3) and access-controlled.
+2. **Out-of-band** — leave the variable empty; the module creates only the secret
+   *container* (no version), and the value is set later via the AWS CLI/console.
+   The value then never enters state.
+
+> Trade-off: dev currently uses mode (1) for convenience, so the TMDB key and
+> GitHub token are present in the encrypted `dev/terraform.tfstate`. For stronger
+> isolation (e.g. prod), prefer mode (2) and inject values out-of-band.
+
+ECS task definitions still reference secrets **by ARN only** via `valueFrom`; the
+plaintext is injected into the container by the ECS agent at start, not embedded
+in the task definition. Note: because the TMDB key is optional, the backend task
+only mounts the `TMDB_API_KEY` secret when a value exists — otherwise it falls
+back to placeholder images and the task starts cleanly.
 
 ---
 
@@ -469,7 +555,7 @@ cost_center          = "eng-infra"
 | `starflix-{env}-ecs-task-exec-role` | ECS agent | Pull from ECR, write to CloudWatch Logs, read Secrets Manager ARNs |
 | `starflix-{env}-ecs-task-role` | Application container | Read S3 assets bucket (GetObject), SSM GetParameter for app config |
 | `starflix-{env}-ecs-instance-role` | EC2 ECS host | `AmazonEC2ContainerServiceforEC2Role` managed policy + SSM agent |
-| `starflix-{env}-codebuild-role` | CodeBuild | Push to ECR, update ECS service, read/write S3 artifacts bucket |
+| `starflix-{env}-codebuild-role` | CodeBuild | Push to ECR, update ECS service, read/write S3 artifacts bucket, `secretsmanager:GetSecretValue` on the GitHub token secret (source auth + webhooks) |
 | `starflix-{env}-terraform-ci-role` | GitHub Actions (OIDC) | Scoped `terraform plan` / `apply` on env-specific resources only |
 | `starflix-bootstrap-admin-role` | Human operator (MFA) | Full access to bootstrap resources; not used in CI |
 
@@ -485,10 +571,11 @@ cost_center          = "eng-infra"
 | Secret | Store | Rotation |
 |---|---|---|
 | `TMDB_API_KEY` | Secrets Manager (`starflix/{env}/tmdb-api-key`) | manual; alert at 90 days |
+| GitHub token (CodeBuild source auth) | Secrets Manager (`starflix/{env}/github-token`) — JSON `{ServerType, AuthType, Token}`, scopes `repo` + `admin:repo_hook` | manual |
 | Future DB password | Secrets Manager | automated via Lambda rotation |
-| SSM parameters (non-sensitive config) | SSM Parameter Store (SecureString with KMS) | N/A |
+| SSM parameters (non-sensitive config) | SSM Parameter Store | N/A |
 
-ECS task definitions reference secrets by ARN only — the plaintext value is injected at container start by the ECS agent. It never appears in Terraform state.
+ECS task definitions reference secrets by ARN only — the plaintext value is injected at container start by the ECS agent, not stored in the task definition. See §7 for the state-vs-out-of-band trade-off (dev currently stores TMDB/GitHub values in encrypted state for convenience).
 
 ### Encryption
 
@@ -569,6 +656,8 @@ VPC endpoints are guarded by `starflix-{env}-endpoint-sg` (HTTPS/443 from `ecs-s
 
 ### Traffic Flow — Inbound Request
 
+**Target design (CloudFront enabled — stage/prod):**
+
 ```
 Client
   ├─► CloudFront  (HTTPS, TLS 1.2+, WAF in prod)
@@ -581,6 +670,24 @@ Client
               └─► Secrets Manager (TMDB key, via VPC endpoint)
               └─► TMDB API (via NAT Gateway → internet)
 ```
+
+**Current dev flow (no CloudFront; browser-direct API — see §0):**
+
+```
+Browser
+  ├─HTTP─► ALB (frontend) :80    — static SPA (React/nginx)
+  │            └─► ECS frontend task
+  │
+  └─HTTP─► ALB (backend) :4000   — API, called DIRECTLY by the browser
+               │                    (VITE_API_URL baked into the SPA; CORS-allowed)
+               └─► ECS backend task
+                     └─► Secrets Manager (TMDB key, via VPC endpoint)
+                     └─► TMDB API (via NAT Gateway → internet)
+```
+
+> Why not nginx-proxied `/api` in dev: the frontend runs in a private subnet and
+> cannot reach the internet-facing backend ALB via NAT hairpin (→ 504). The
+> browser-direct approach sidesteps this. Details: `docs/frontend-backend-504-fix.md`.
 
 ### NAT Gateway HA Model
 
@@ -622,4 +729,5 @@ Given the dependency graph, implement modules in this sequence:
 
 ---
 
-*Last updated: 2026-06-26. Maintained by the Platform Team.*
+*Last updated: 2026-07-02. Maintained by the Platform Team.*
+*Design doc reflects the target architecture; §0 tracks the live `dev` deployment.*
