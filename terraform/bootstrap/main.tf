@@ -21,7 +21,7 @@ locals {
 # ── S3 Bucket for Terraform State ─────────────────────────────────────────────
 resource "aws_s3_bucket" "tfstate" {
   bucket        = local.bucket_name
-  force_destroy = false
+  force_destroy = true
 
   tags = merge(var.tags, {
     Name = local.bucket_name
