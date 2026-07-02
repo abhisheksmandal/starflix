@@ -242,3 +242,10 @@ variable "github_token" {
   default     = ""
   sensitive   = true
 }
+
+variable "tmdb_api_key" {
+  type        = string
+  description = "TMDB API key for backend metadata enrichment. Leave empty to run with placeholder images. Set via a gitignored *.tfvars file or TF_VAR_tmdb_api_key."
+  default     = ""
+  sensitive   = true
+}

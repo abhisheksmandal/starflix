@@ -29,6 +29,16 @@ resource "aws_secretsmanager_secret" "tmdb_api_key" {
   })
 }
 
+# Only managed when a key is supplied via var.tmdb_api_key.
+# Otherwise the value is set out-of-band and the backend falls back
+# to placeholder images.
+resource "aws_secretsmanager_secret_version" "tmdb_api_key" {
+  count = var.tmdb_api_key != "" ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.tmdb_api_key.id
+  secret_string = var.tmdb_api_key
+}
+
 # ############################################
 # # DEMO/REFERENCE ONLY: Unused Strapi Secrets
 # # (Commented out to prevent AWS billing of unused resources.

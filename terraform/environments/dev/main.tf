@@ -152,6 +152,7 @@ module "secrets" {
   recovery_window_days = var.secrets_recovery_window_days
 
   github_token = var.github_token
+  tmdb_api_key = var.tmdb_api_key
 
   tags = local.common_tags
 }
@@ -289,12 +290,14 @@ module "ecs_service_backend" {
     }
   ]
 
-  secret_arns = [
+  # Only inject the TMDB key when a value is provided; otherwise the
+  # backend falls back to placeholder images and the task can start.
+  secret_arns = var.tmdb_api_key != "" ? [
     {
       name      = "TMDB_API_KEY"
       valueFrom = module.secrets.tmdb_api_key_arn
     }
-  ]
+  ] : []
 
   log_retention_days = var.log_retention_days
 

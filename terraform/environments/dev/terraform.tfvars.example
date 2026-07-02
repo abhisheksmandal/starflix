@@ -57,3 +57,7 @@ github_branch   = "main"
 # Prefer setting via env var (TF_VAR_github_token) over committing to a file.
 # Leave empty to manage the secret value out-of-band via the AWS CLI.
 # github_token = "ghp_xxxxxxxxxxxxxxxxxxxx"
+
+# TMDB API key for backend metadata enrichment.
+# Leave empty/unset to run the backend with placeholder images.
+# tmdb_api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -29,6 +29,13 @@ variable "recovery_window_days" {
   }
 }
 
+variable "tmdb_api_key" {
+  type        = string
+  description = "TMDB API key for backend metadata enrichment. Leave empty to set out-of-band; the backend then falls back to placeholder images."
+  default     = ""
+  sensitive   = true
+}
+
 variable "github_token" {
   type        = string
   description = "GitHub personal access token for CodeBuild source auth. Leave empty to set the value out-of-band instead of via Terraform."
