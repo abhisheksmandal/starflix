@@ -29,6 +29,13 @@ variable "recovery_window_days" {
   }
 }
 
+variable "github_token" {
+  type        = string
+  description = "GitHub personal access token for CodeBuild source auth. Leave empty to set the value out-of-band instead of via Terraform."
+  default     = ""
+  sensitive   = true
+}
+
 variable "frontend_url" {
   type        = string
   description = "Public URL of the frontend. Stored as SSM parameter for backend container config."

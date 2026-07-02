@@ -16,3 +16,10 @@ variable "assets_bucket_arn" {
   description = "S3 assets bucket ARN accessible by application containers."
   default     = ""
 }
+
+
+variable "github_token_secret_arn" {
+  type        = string
+  description = "Secrets Manager ARN of the GitHub token used by CodeBuild source auth and webhooks."
+  default     = ""
+}

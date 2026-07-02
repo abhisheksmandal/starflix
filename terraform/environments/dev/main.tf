@@ -57,6 +57,9 @@ module "iam" {
   name_prefix = local.name_prefix
 
 
+  github_token_secret_arn = module.secrets.github_token_arn
+
+
   tags = local.common_tags
 
 }
@@ -147,6 +150,8 @@ module "secrets" {
   environment = var.environment
 
   recovery_window_days = var.secrets_recovery_window_days
+
+  github_token = var.github_token
 
   tags = local.common_tags
 }
@@ -349,4 +354,8 @@ module "codebuild" {
   aws_account_id = data.aws_caller_identity.current.account_id
 
   tags = local.common_tags
+
+  # Ensure the GitHub token secret value exists before the webhooks,
+  # which validate the CodeBuild role's access to a populated secret.
+  depends_on = [module.secrets]
 }

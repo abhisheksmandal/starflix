@@ -51,3 +51,9 @@ cloudwatch_5xx_threshold           = 10
 cloudwatch_response_time_threshold = 5
 github_repo_url = "https://github.com/abhisheksmandal/starflix.git"
 github_branch   = "main"
+
+# GitHub PAT for CodeBuild source auth + webhook registration.
+# Scopes required: repo, admin:repo_hook.
+# Prefer setting via env var (TF_VAR_github_token) over committing to a file.
+# Leave empty to manage the secret value out-of-band via the AWS CLI.
+# github_token = "ghp_xxxxxxxxxxxxxxxxxxxx"

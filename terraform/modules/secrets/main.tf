@@ -97,6 +97,22 @@ resource "aws_secretsmanager_secret" "github_token" {
   })
 }
 
+# Only managed when a token value is supplied via var.github_token.
+# Otherwise the secret value is set out-of-band and never enters state.
+resource "aws_secretsmanager_secret_version" "github_token" {
+  count = var.github_token != "" ? 1 : 0
+
+  secret_id = aws_secretsmanager_secret.github_token.id
+
+  # CodeBuild GitHub source auth requires the secret in this JSON shape,
+  # not a bare token string.
+  secret_string = jsonencode({
+    ServerType = "GITHUB"
+    AuthType   = "PERSONAL_ACCESS_TOKEN"
+    Token      = var.github_token
+  })
+}
+
 ############################################
 # SSM Parameters — Non-sensitive config
 # Stored as String type; not secret enough

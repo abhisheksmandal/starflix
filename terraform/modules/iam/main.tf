@@ -332,6 +332,25 @@ data "aws_iam_policy_document" "codebuild_policy" {
     ]
   }
 
+
+
+  statement {
+
+    effect = "Allow"
+
+
+    actions = [
+
+      "secretsmanager:GetSecretValue"
+
+    ]
+
+
+    resources = [
+      var.github_token_secret_arn
+    ]
+  }
+
 }
 
 

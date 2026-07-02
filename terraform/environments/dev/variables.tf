@@ -235,3 +235,10 @@ variable "github_branch" {
   description = "Git branch CodeBuild builds from."
   default     = "main"
 }
+
+variable "github_token" {
+  type        = string
+  description = "GitHub PAT (scopes: repo, admin:repo_hook) for CodeBuild source auth and webhooks. Set via a gitignored *.tfvars file or TF_VAR_github_token; leave empty to manage the secret value out-of-band."
+  default     = ""
+  sensitive   = true
+}
