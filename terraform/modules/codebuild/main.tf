@@ -266,6 +266,7 @@ resource "aws_codebuild_webhook" "frontend" {
   project_name = aws_codebuild_project.frontend.name
   build_type   = "BUILD"
 
+  # All filters in a group are ANDed: push to main AND a change under frontend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -275,6 +276,11 @@ resource "aws_codebuild_webhook" "frontend" {
     filter {
       type    = "HEAD_REF"
       pattern = "^refs/heads/main$"
+    }
+
+    filter {
+      type    = "FILE_PATH"
+      pattern = "^frontend/"
     }
   }
 }
@@ -283,6 +289,7 @@ resource "aws_codebuild_webhook" "backend" {
   project_name = aws_codebuild_project.backend.name
   build_type   = "BUILD"
 
+  # All filters in a group are ANDed: push to main AND a change under backend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -292,6 +299,11 @@ resource "aws_codebuild_webhook" "backend" {
     filter {
       type    = "HEAD_REF"
       pattern = "^refs/heads/main$"
+    }
+
+    filter {
+      type    = "FILE_PATH"
+      pattern = "^backend/"
     }
   }
 }
