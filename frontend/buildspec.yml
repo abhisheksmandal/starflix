@@ -6,7 +6,7 @@ phases:
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
   build:
     commands:
-      - docker build -t $ECR_REPO_URL:$IMAGE_TAG -t $ECR_REPO_URL:latest ./frontend
+      - docker build --build-arg VITE_API_URL="$VITE_API_URL" -t $ECR_REPO_URL:$IMAGE_TAG -t $ECR_REPO_URL:latest ./frontend
   post_build:
     commands:
       - docker push $ECR_REPO_URL:$IMAGE_TAG

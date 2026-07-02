@@ -57,6 +57,13 @@ resource "aws_codebuild_project" "frontend" {
       name  = "ECS_SERVICE"
       value = var.frontend_service_name
     }
+
+    # Baked into the SPA at build time so the browser calls the public
+    # backend ALB directly (no in-VPC nginx proxy hairpin).
+    environment_variable {
+      name  = "VITE_API_URL"
+      value = var.frontend_api_url
+    }
   }
 
   source {

@@ -34,6 +34,12 @@ variable "frontend_repo_url" {
   description = "ECR repository URL for the frontend image."
 }
 
+variable "frontend_api_url" {
+  type        = string
+  description = "Public base URL of the backend API, baked into the frontend build as VITE_API_URL so the browser calls the backend directly. Example: http://backend-alb:4000."
+  default     = ""
+}
+
 variable "backend_repo_url" {
   type        = string
   description = "ECR repository URL for the backend image."

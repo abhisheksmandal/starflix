@@ -349,6 +349,10 @@ module "codebuild" {
   frontend_repo_url = module.ecr.frontend_repository_url
   backend_repo_url  = module.ecr.backend_repository_url
 
+  # Public backend API URL baked into the frontend build (Option A: the
+  # browser calls the backend ALB directly instead of via the nginx proxy).
+  frontend_api_url = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
+
   frontend_cluster_name = module.ecs_cluster.cluster_name
   frontend_service_name = module.ecs_service_frontend.service_name
   backend_service_name  = module.ecs_service_backend.service_name
