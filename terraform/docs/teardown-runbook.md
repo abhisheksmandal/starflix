@@ -1,8 +1,10 @@
 # Teardown Runbook — `terraform destroy`
 
 **Applies to:** any Starflix environment (`dev` / `stage` / `prod`).
-**TL;DR:** don't run a bare `terraform destroy` on this stack — scale the ECS
-Auto Scaling Group to zero first, or use `scripts/destroy.sh`, which does it for you.
+**TL;DR:** don't run a bare `terraform destroy` on this stack. Use
+`scripts/destroy.sh`, which does it in the right order: scale ECS **services** to
+0, **suspend** the ASG's launch process, scale the ASG to 0, then destroy. On a
+low-memory box also see the OOM section below (`-parallelism` / CLI fallback).
 
 ---
 
@@ -32,7 +34,26 @@ module.vpc.aws_internet_gateway.this:             Still destroying... [04m00s el
 > `managed_termination_protection = DISABLED` / `protect_from_scale_in = false`).
 > It is the service-drain vs. instance-registration ordering.
 
-Verify the stuck state:
+### The gotcha — managed scaling respawns the instances
+
+Just scaling the ASG to zero is **not enough**. The ECS capacity provider uses
+**managed (target-tracking) scaling**, which installs an
+`ECSManagedAutoScalingPolicy` on the ASG. If the ECS **services still want tasks**
+(`desiredCount >= 1`) when you scale the ASG down, those tasks go `PENDING`, the
+`AlarmHigh` alarm fires, and the policy **drives the ASG's desired capacity right
+back up** — instances terminate and respawn forever:
+
+```
+user request → desired 3→0, instances terminated
+TargetTracking AlarmHigh → ECSManagedAutoScalingPolicy → desired 0→2
+TargetTracking AlarmHigh → desired 2→3     (respawned)
+```
+
+So a correct teardown must **(a) remove the task demand first** (scale services to
+0) **and (b) prevent the ASG from launching** (suspend its `Launch` process), then
+scale it to zero.
+
+Verify the stuck / respawn state:
 
 ```bash
 aws ecs describe-services --cluster starflix-dev-cluster \
@@ -41,16 +62,26 @@ aws ecs describe-services --cluster starflix-dev-cluster \
   --query 'services[].{name:serviceName,status:status,running:runningCount}'
 # -> status: DRAINING, running: 0   (stuck)
 
-aws ecs list-container-instances --cluster starflix-dev-cluster --region ap-south-1
-# -> 3 instances still registered   (the blocker)
+aws autoscaling describe-scaling-activities --auto-scaling-group-name starflix-dev-asg \
+  --region ap-south-1 --max-items 4 --query 'Activities[].Cause'
+# -> shows ECSManagedAutoScalingPolicy raising desired capacity (respawn)
 ```
 
 ---
 
-## The fix — scale the ASG to zero before destroying
+## The fix — the correct teardown order
 
-Removing the container instances lets the `DRAINING` services finalize, which
-unblocks the rest of the destroy.
+The wrapper script encodes the full, correct sequence:
+
+1. **Scale every ECS service to `desired-count 0`** and wait for tasks to stop
+   (removes the task demand that drives managed scaling).
+2. **Suspend the ASG processes** `Launch`, `AlarmNotification`, `ReplaceUnhealthy`
+   (so the managed-scaling policy physically cannot relaunch instances;
+   `Terminate` stays enabled so the next step can remove them).
+3. **Scale the ASG to `min=0, desired=0`** and wait for container instances to
+   deregister.
+4. **`terraform destroy`**.
+5. Verify the state is empty.
 
 ### Option A — use the wrapper script (recommended)
 
@@ -60,28 +91,28 @@ scripts/destroy.sh dev            # env defaults to dev
 scripts/destroy.sh dev ap-south-1 # optional explicit region
 ```
 
-The script:
-1. Finds the ASG + cluster from Terraform outputs (falls back to `starflix-<env>-asg`).
-2. Scales the ASG to `min=0, desired=0`.
-3. Waits for all ECS container instances to deregister.
-4. Runs `terraform destroy -auto-approve`.
-5. Verifies the state is empty.
-
-### Option B — manual, two commands
+### Option B — manual
 
 ```bash
 cd terraform/environments/dev
+CL=starflix-dev-cluster; ASG=starflix-dev-asg; R=ap-south-1
 
-# 1. Scale compute to zero and let instances drain
-aws autoscaling update-auto-scaling-group \
-  --auto-scaling-group-name starflix-dev-asg \
-  --min-size 0 --desired-capacity 0 --region ap-south-1
+# 1. Remove task demand
+for s in $(aws ecs list-services --cluster $CL --region $R --query serviceArns --output text); do
+  aws ecs update-service --cluster $CL --service "$s" --desired-count 0 --region $R >/dev/null
+done
+
+# 2. Stop the ASG from relaunching, then 3. scale to zero
+aws autoscaling suspend-processes --auto-scaling-group-name $ASG \
+  --scaling-processes Launch AlarmNotification ReplaceUnhealthy --region $R
+aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG \
+  --min-size 0 --desired-capacity 0 --region $R
 
 # wait until this returns nothing:
-watch -n 10 "aws ecs list-container-instances --cluster starflix-dev-cluster \
-  --region ap-south-1 --query containerInstanceArns --output text"
+watch -n 10 "aws ecs list-container-instances --cluster $CL --region $R \
+  --query containerInstanceArns --output text"
 
-# 2. Destroy
+# 4. Destroy
 terraform destroy -auto-approve
 ```
 
@@ -99,18 +130,95 @@ ecs_desired_capacity = 0
 ## Unblocking a destroy that is ALREADY hung
 
 If you already ran `terraform destroy` and it's stuck on the ECS services, **leave
-it running** and, in another shell, scale the ASG to zero. Terraform's next poll
-will see the services finish and continue automatically — no need to abort.
-
-```bash
-aws autoscaling update-auto-scaling-group \
-  --auto-scaling-group-name starflix-dev-asg \
-  --min-size 0 --desired-capacity 0 --region ap-south-1
-```
+it running** and, in another shell, run steps 1–3 above (scale services to 0,
+suspend ASG processes, scale ASG to 0). Terraform's next poll will see the
+services finish and continue automatically — no need to abort.
 
 > Do **not** just terminate the EC2 instances directly while the ASG is still
-> active — with `min_size >= 1` the ASG will immediately launch replacements.
-> Scale the ASG down instead.
+> active — managed scaling / `min_size` will immediately launch replacements.
+> Suspend `Launch` and scale the ASG down instead.
+
+---
+
+## If terraform itself keeps crashing (low memory / OOM)
+
+Symptom — the destroy dies mid-run, **not** on a specific resource, with:
+
+```
+Error: Plugin did not respond
+The plugin ... failed to respond to ... ApplyResourceChange
+Error: execution halted
+```
+
+or `Request cancelled ... UpgradeResourceState request was cancelled` during the
+refresh phase. This is the **AWS provider process being OOM-killed**, not a logic
+error. Check:
+
+```bash
+free -h    # if 'available' is a few hundred MB and Swap is ~full, that's the cause
+```
+
+The AWS provider (v6.x) is memory-hungry and default parallelism runs 10 resource
+operations concurrently. On a constrained box it gets killed after 10–20 resources,
+makes partial progress, and looks like an endless loop.
+
+Mitigations, in order:
+
+1. **Free RAM** (close other heavy processes) — the reliable fix.
+2. **Lower parallelism** so fewer provider ops run at once:
+   ```bash
+   terraform destroy -auto-approve -parallelism=2   # or -parallelism=1
+   ```
+3. **Last resort — delete via AWS CLI** (uses a fraction of the memory), then
+   reconcile state. See the next section.
+
+> Partial OOM destroys can leave state **inconsistent** — resources get deleted
+> out of module order. A known consequence: the IAM `secretsmanager:GetSecretValue`
+> policy gets deleted before the CodeBuild **webhooks**, after which
+> `DeleteWebhook` fails with *"service role does not have access to retrieve
+> secret"*. Fix: `terraform state rm module.codebuild.aws_codebuild_webhook.frontend
+> module.codebuild.aws_codebuild_webhook.backend` (deleting the CodeBuild *project*
+> removes the webhook server-side anyway), then continue.
+
+---
+
+## Manual CLI teardown (last resort, when terraform can't run)
+
+If the box is too memory-starved for terraform to run at all, delete the remaining
+resources directly, in dependency order, then clear state. Discover IDs by the
+`Project=starflix` tag / deterministic names, then:
+
+```bash
+R=ap-south-1
+# 1. ALB first (releases ENIs over ~1-2 min)
+aws elbv2 delete-load-balancer --region $R --load-balancer-arn <alb-arn>
+# 2. CodeBuild projects, 3. ECR repos (force), 4. ECS cluster, 5. secrets
+aws codebuild delete-project --region $R --name starflix-dev-frontend-build
+aws codebuild delete-project --region $R --name starflix-dev-backend-build
+aws ecr delete-repository --region $R --repository-name starflix-dev/frontend --force
+aws ecr delete-repository --region $R --repository-name starflix-dev/backend  --force
+aws ecs delete-cluster    --region $R --cluster starflix-dev-cluster
+aws secretsmanager delete-secret --region $R --secret-id starflix/dev/github-token  --force-delete-without-recovery
+aws secretsmanager delete-secret --region $R --secret-id starflix/dev/tmdb-api-key --force-delete-without-recovery
+# 6. empty + delete S3 artifacts bucket (handle versions/delete-markers if versioned)
+aws s3 rb s3://<artifacts-bucket> --force
+# 7. IAM codebuild role: detach attached + delete inline, then delete-role
+# 8. wait for ENIs to clear, then IGW (detach+delete), subnets, ALB SG, VPC
+until [ "$(aws ec2 describe-network-interfaces --region $R \
+  --filters Name=vpc-id,Values=<vpc-id> --query 'length(NetworkInterfaces)' --output text)" = 0 ]; do sleep 15; done
+aws ec2 detach-internet-gateway --region $R --internet-gateway-id <igw> --vpc-id <vpc>
+aws ec2 delete-internet-gateway --region $R --internet-gateway-id <igw>
+aws ec2 delete-subnet          --region $R --subnet-id <subnet>       # each
+aws ec2 delete-security-group  --region $R --group-id <alb-sg>
+aws ec2 delete-vpc             --region $R --vpc-id <vpc>
+```
+
+Then reconcile terraform state (remove the now-nonexistent managed resources):
+
+```bash
+cd terraform/environments/dev
+terraform state list | grep -vE '^data\.' | xargs -r terraform state rm
+```
 
 ---
 
@@ -142,7 +250,7 @@ but they are stored in the gitignored `terraform.tfvars`, so a later
 
 ```bash
 cd terraform/environments/dev
-terraform state list | wc -l    # expect 0
+terraform state list | grep -vE '^data\.' | wc -l   # expect 0 (data sources may remain; harmless)
 
 for q in \
   "ec2 describe-instances --filters Name=tag:Project,Values=starflix Name=instance-state-name,Values=running --query Reservations[].Instances[].InstanceId" \

@@ -45,11 +45,51 @@ CLUSTER_NAME="$(terraform output -raw ecs_cluster_name 2>/dev/null || true)"
 [[ -z "${ASG_NAME}" ]] && ASG_NAME="starflix-${ENV}-asg"
 [[ -z "${CLUSTER_NAME}" ]] && CLUSTER_NAME="starflix-${ENV}-cluster"
 
-# --- Step 1: scale the ASG to zero so instances terminate & deregister ------
+# --- Step 1: scale ECS services to 0 FIRST --------------------------------
+# The capacity provider uses managed (target-tracking) scaling. If we scale the
+# ASG down while the services still want tasks, those tasks go PENDING and
+# managed scaling drives the ASG right back up — instances respawn forever.
+# Removing the task demand first lets the ASG scale to (and stay at) zero.
+if aws ecs describe-clusters --clusters "${CLUSTER_NAME}" --region "${REGION}" \
+      --query 'clusters[0].clusterName' --output text 2>/dev/null | grep -q "${CLUSTER_NAME}"; then
+
+  SERVICES="$(aws ecs list-services --cluster "${CLUSTER_NAME}" --region "${REGION}" \
+                --query 'serviceArns' --output text 2>/dev/null || true)"
+  if [[ -n "${SERVICES}" && "${SERVICES}" != "None" ]]; then
+    for SVC in ${SERVICES}; do
+      echo "==> Scaling ECS service to 0: ${SVC##*/}"
+      aws ecs update-service --cluster "${CLUSTER_NAME}" --service "${SVC}" \
+        --desired-count 0 --region "${REGION}" >/dev/null
+    done
+
+    echo "==> Waiting for all tasks in '${CLUSTER_NAME}' to stop..."
+    for i in $(seq 1 60); do   # up to ~10 min
+      TASKS="$(aws ecs list-tasks --cluster "${CLUSTER_NAME}" --region "${REGION}" \
+                --query 'length(taskArns)' --output text 2>/dev/null || echo 0)"
+      [[ "${TASKS}" == "0" || "${TASKS}" == "None" ]] && { echo "    running tasks: 0"; break; }
+      echo "    tasks still running: ${TASKS} (waited $((i*10))s)"
+      sleep 10
+    done
+  fi
+fi
+
+# --- Step 2: scale the ASG to zero so instances terminate & deregister ------
 if aws autoscaling describe-auto-scaling-groups \
       --auto-scaling-group-names "${ASG_NAME}" --region "${REGION}" \
       --query 'AutoScalingGroups[0].AutoScalingGroupName' --output text 2>/dev/null \
       | grep -q "${ASG_NAME}"; then
+
+  # Suspend Launch/AlarmNotification/ReplaceUnhealthy FIRST. The ECS capacity
+  # provider's managed (target-tracking) scaling policy will otherwise raise the
+  # ASG's desired capacity back up and relaunch instances even with services at
+  # 0 — instances respawn forever. Suspending Launch makes it physically unable
+  # to create instances; suspending AlarmNotification stops the policy acting.
+  # Terminate is left ENABLED so the scale-to-0 below actually removes instances.
+  echo "==> Suspending ASG scaling processes (Launch, AlarmNotification, ReplaceUnhealthy)..."
+  aws autoscaling suspend-processes \
+    --auto-scaling-group-name "${ASG_NAME}" \
+    --scaling-processes Launch AlarmNotification ReplaceUnhealthy \
+    --region "${REGION}"
 
   echo "==> Scaling ASG '${ASG_NAME}' to 0 (min=0, desired=0)..."
   aws autoscaling update-auto-scaling-group \
@@ -69,7 +109,7 @@ else
   echo "==> ASG '${ASG_NAME}' not found (already gone?). Skipping scale-down."
 fi
 
-# --- Step 2: terraform destroy --------------------------------------------
+# --- Step 3: terraform destroy --------------------------------------------
 echo "==> Running terraform destroy..."
 terraform destroy -auto-approve
 
