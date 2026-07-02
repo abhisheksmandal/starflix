@@ -248,6 +248,9 @@ module "ecs_service_frontend" {
   log_retention_days = var.log_retention_days
 
   tags = local.common_tags
+
+  # Wait for the initial image seed so tasks don't crash-loop on first apply.
+  depends_on = [null_resource.seed_images]
 }
 
 ############################################
@@ -302,6 +305,9 @@ module "ecs_service_backend" {
   log_retention_days = var.log_retention_days
 
   tags = local.common_tags
+
+  # Wait for the initial image seed so tasks don't crash-loop on first apply.
+  depends_on = [null_resource.seed_images]
 }
 
 ############################################
@@ -354,8 +360,11 @@ module "codebuild" {
   frontend_api_url = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
 
   frontend_cluster_name = module.ecs_cluster.cluster_name
-  frontend_service_name = module.ecs_service_frontend.service_name
-  backend_service_name  = module.ecs_service_backend.service_name
+  # Deterministic service names (not module outputs) so CodeBuild does NOT depend
+  # on the ECS services — the services depend on the initial seed build instead
+  # (null_resource.seed_images), which would otherwise create a dependency cycle.
+  frontend_service_name = "${local.name_prefix}-svc-frontend"
+  backend_service_name  = "${local.name_prefix}-svc-backend"
 
   aws_region     = var.aws_region
   aws_account_id = data.aws_caller_identity.current.account_id
@@ -365,4 +374,45 @@ module "codebuild" {
   # Ensure the GitHub token secret value exists before the webhooks,
   # which validate the CodeBuild role's access to a populated secret.
   depends_on = [module.secrets]
+}
+
+############################################
+# Initial image seed (bootstrap)
+# On the first apply, ECR is empty and the
+# ECS tasks would crash-loop with no image.
+# Trigger both CodeBuild projects and WAIT
+# for the images to land in ECR BEFORE the
+# ECS services are created (they depend_on
+# this resource). Runs once, on create.
+############################################
+
+resource "null_resource" "seed_images" {
+  depends_on = [module.codebuild]
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      REGION="${var.aws_region}"
+      PROJECTS=("${module.codebuild.frontend_project_name}" "${module.codebuild.backend_project_name}")
+      IDS=()
+      for P in "$${PROJECTS[@]}"; do
+        ID=$(aws codebuild start-build --project-name "$P" --region "$REGION" --query 'build.id' --output text)
+        echo "Started initial build for $P: $ID"
+        IDS+=("$ID")
+      done
+      for ID in "$${IDS[@]}"; do
+        echo "Waiting for build $ID to finish..."
+        while true; do
+          S=$(aws codebuild batch-get-builds --ids "$ID" --region "$REGION" --query 'builds[0].buildStatus' --output text)
+          case "$S" in
+            SUCCEEDED)   echo "  $ID SUCCEEDED"; break ;;
+            IN_PROGRESS) sleep 15 ;;
+            *)           echo "  $ID ended with status: $S" >&2; exit 1 ;;
+          esac
+        done
+      done
+      echo "Seed images pushed to ECR."
+    EOT
+  }
 }

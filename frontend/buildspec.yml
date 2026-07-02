@@ -11,4 +11,4 @@ phases:
     commands:
       - docker push $ECR_REPO_URL:$IMAGE_TAG
       - docker push $ECR_REPO_URL:latest
-      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
+      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION || echo "ECS service not available yet (initial seed build); skipping deploy."
