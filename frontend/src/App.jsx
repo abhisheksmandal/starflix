@@ -72,7 +72,7 @@ export default function App() {
       <div className="app-loading">
         <div className="app-loading__logo">
           <span className="app-loading__star">★</span>
-          <span>STARFLIXXX</span>
+          <span>STARFLIX</span>
         </div>
         <div className="spinner" />
       </div>
