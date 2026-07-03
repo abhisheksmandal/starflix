@@ -1,4 +1,4 @@
-// All txt theatrical releases + confirmed upcoming films (as of 2025).
+// All MCU theatrical releases + confirmed upcoming films (as of 2025).
 // `tmdbId` is used by the TMDB service to fetch real posters/backdrops.
 // `poster` / `backdrop` are picsum fallbacks used when TMDB_API_KEY is not set.
 
@@ -347,7 +347,7 @@ const movies = [
   {
     id: 34, tmdbId: 533535,
     title: "Deadpool & Wolverine",
-    description: "Wade Wilson dons the Deadpool costume once more and is brought into the txt by the TVA. His only hope to save his world? Team up with a very reluctant Wolverine.",
+    description: "Wade Wilson dons the Deadpool costume once more and is brought into the MCU by the TVA. His only hope to save his world? Team up with a very reluctant Wolverine.",
     year: 2024, rating: 7.8, duration: "2h 7m",
     genre: ["Action", "Comedy", "Sci-Fi"],
     category: "trending", phase: 5,
@@ -399,7 +399,7 @@ const movies = [
   {
     id: 39, tmdbId: null,
     title: "Avengers: Doomsday",
-    description: "The Avengers reassemble in a battle for the fate of existence itself as the all-powerful Doom arrives to reshape reality. The txt's next generational crossover event begins here.",
+    description: "The Avengers reassemble in a battle for the fate of existence itself as the all-powerful Doom arrives to reshape reality. The MCU's next generational crossover event begins here.",
     year: 2026, rating: null, duration: "TBA",
     releaseDate: "May 1, 2026",
     genre: ["Action", "Sci-Fi", "Adventure"],
@@ -517,9 +517,9 @@ const shows = [];
 
 const categories = [
   { id: "trending",  label: "Latest & Trending" },
-  { id: "popular",  label: "Most Popular txt Films" },
+  { id: "popular",  label: "Most Popular MCU Films" },
   { id: "top_rated", label: "Top Rated" },
-  { id: "classics", label: "txt Classics" },
+  { id: "classics", label: "MCU Classics" },
   { id: "disney", label: "Disney Animation" },
   { id: "upcoming", label: "Coming Soon" },
 ];
