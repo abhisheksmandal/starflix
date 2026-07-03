@@ -13,7 +13,7 @@ variable "aws_region" {
 variable "tags" {
   type        = map(string)
   description = "Resource tags."
-  default     = {
+  default = {
     Project   = "starflix"
     ManagedBy = "terraform"
   }

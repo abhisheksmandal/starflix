@@ -25,8 +25,14 @@ variable "alb_security_group_id" {
 
 variable "acm_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for the HTTPS listeners. Pass null to create HTTP-only listeners (dev without DNS)."
+  description = "ACM certificate ARN for the HTTPS listeners. Used as the listener certificate value when enable_https is true."
   default     = null
+}
+
+variable "enable_https" {
+  type        = bool
+  description = "Create the HTTPS listener (and redirect HTTP→HTTPS). Must be a plan-time-known boolean — the ACM cert ARN itself is unknown until apply, so listener count/for_each cannot depend on it. Pass local.features.enable_dns."
+  default     = false
 }
 
 variable "frontend_port" {

@@ -153,6 +153,11 @@ output "acm_certificate_arn" {
   value       = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
 }
 
+output "cloudfront_acm_certificate_arn" {
+  description = "Validated ACM certificate ARN (us-east-1) for CloudFront."
+  value       = local.features.enable_dns ? module.dns[0].cloudfront_acm_certificate_arn : null
+}
+
 # ── ALB ────────────────────────────────────────────────────────────────────────
 
 output "frontend_alb_dns_name" {

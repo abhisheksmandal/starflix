@@ -10,5 +10,10 @@ output "zone_name_servers" {
 
 output "acm_certificate_arn" {
   description = "Validated ACM certificate ARN (ap-south-1). Attach to the ALB HTTPS listener."
-  value       = aws_acm_certificate_validation.this.certificate_arn
+  value       = aws_acm_certificate_validation.alb.certificate_arn
+}
+
+output "cloudfront_acm_certificate_arn" {
+  description = "Validated ACM certificate ARN (us-east-1). Attach to the CloudFront distribution."
+  value       = aws_acm_certificate_validation.cloudfront.certificate_arn
 }

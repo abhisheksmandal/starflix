@@ -61,7 +61,7 @@ resource "aws_lb_listener" "frontend_http" {
   protocol          = "HTTP"
 
   dynamic "default_action" {
-    for_each = var.acm_certificate_arn == null ? [1] : []
+    for_each = var.enable_https ? [] : [1]
     content {
       type             = "forward"
       target_group_arn = aws_lb_target_group.frontend.arn
@@ -69,7 +69,7 @@ resource "aws_lb_listener" "frontend_http" {
   }
 
   dynamic "default_action" {
-    for_each = var.acm_certificate_arn != null ? [1] : []
+    for_each = var.enable_https ? [1] : []
     content {
       type = "redirect"
       redirect {
@@ -90,7 +90,7 @@ resource "aws_lb_listener" "frontend_http" {
 # Only created when an ACM certificate ARN is provided.
 
 resource "aws_lb_listener" "frontend_https" {
-  count = var.acm_certificate_arn != null ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   load_balancer_arn = aws_lb.frontend.arn
   port              = 443

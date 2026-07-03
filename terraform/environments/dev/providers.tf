@@ -20,3 +20,15 @@ provider "aws" {
     tags = local.common_tags
   }
 }
+
+# CloudFront requires its ACM certificate to live in us-east-1, regardless of
+# the region the rest of the stack runs in. This aliased provider exists solely
+# to mint (and validate) that certificate. Everything else stays in aws_region.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = local.common_tags
+  }
+}

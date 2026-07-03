@@ -232,12 +232,12 @@ resource "aws_cloudfront_distribution" "this" {
   # ── Behaviour 2: API → Backend ALB ────────────────────────────────────────
 
   ordered_cache_behavior {
-    path_pattern              = "/api/*"
-    target_origin_id          = "origin-backend"
-    viewer_protocol_policy    = "redirect-to-https"
-    cache_policy_id           = aws_cloudfront_cache_policy.backend.id
-    origin_request_policy_id  = aws_cloudfront_origin_request_policy.backend.id
-    compress                  = false
+    path_pattern             = "/api/*"
+    target_origin_id         = "origin-backend"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = aws_cloudfront_cache_policy.backend.id
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.backend.id
+    compress                 = false
 
     allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods  = ["GET", "HEAD"]

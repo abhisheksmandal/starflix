@@ -110,6 +110,11 @@ module "dns" {
   source = "../../modules/dns"
   count  = local.features.enable_dns ? 1 : 0
 
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
   name_prefix = local.name_prefix
   domain_name = var.domain_name
 
@@ -129,6 +134,7 @@ module "alb" {
   alb_security_group_id = module.security_groups.alb_sg_id
 
   acm_certificate_arn = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
+  enable_https        = local.features.enable_dns
 
   frontend_port = var.frontend_port
   backend_port  = var.backend_port
@@ -191,7 +197,8 @@ module "cloudfront" {
   name_prefix = local.name_prefix
   domain_name = var.domain_name
 
-  acm_certificate_arn = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
+  # CloudFront needs the us-east-1 certificate, NOT the ap-south-1 ALB cert.
+  acm_certificate_arn = local.features.enable_dns ? module.dns[0].cloudfront_acm_certificate_arn : null
 
   frontend_alb_dns_name     = module.alb.frontend_alb_dns_name
   backend_alb_dns_name      = module.alb.backend_alb_dns_name
@@ -203,6 +210,29 @@ module "cloudfront" {
   enable_waf = var.enable_waf
 
   tags = local.common_tags
+}
+
+############################################
+# DNS Alias Records → CloudFront
+# Point apex, www and api at the distribution.
+# Lives in the environment (not the dns module)
+# to avoid a dns → cloudfront → dns cycle:
+# cloudfront depends on the dns cert, so these
+# records must be created after both exist.
+############################################
+
+resource "aws_route53_record" "cloudfront_alias" {
+  for_each = local.cloudfront_alias_records
+
+  zone_id = module.dns[0].zone_id
+  name    = each.value.name
+  type    = each.value.type
+
+  alias {
+    name                   = module.cloudfront[0].distribution_domain_name
+    zone_id                = module.cloudfront[0].distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
 }
 
 ############################################
@@ -288,8 +318,8 @@ module "ecs_service_backend" {
       value = tostring(var.backend_port)
     },
     {
-    name  = "FRONTEND_URL"
-    value = "http://${module.alb.frontend_alb_dns_name}"
+      name  = "FRONTEND_URL"
+      value = "http://${module.alb.frontend_alb_dns_name}"
     }
   ]
 

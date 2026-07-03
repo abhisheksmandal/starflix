@@ -6,6 +6,8 @@
 > This document describes the **full target design** (dev / stage / prod). Much of the
 > CDN / DNS / WAF / multi-AZ content is flag-gated and not yet deployed in `dev`.
 > For what is **actually running today**, see **§0 Current Deployment Snapshot (dev)**.
+>
+> **Before your first `terraform apply`**, read [`docs/prerequisites.md`](docs/prerequisites.md).
 
 ---
 
@@ -402,6 +404,7 @@ features = {
 | Flag | Type | Dev | Stage | Prod | Effect |
 |---|---|---|---|---|---|
 | `single_nat_gateway` | bool | `true` | `false` | `false` | 1 NAT Gateway vs 1 per AZ |
+| `enable_dns` | bool | `false` | `true` | `true` | Route 53 hosted zone + ACM certs (ALB & CloudFront) |
 | `enable_cloudfront` | bool | `false` | `true` | `true` | deploy CloudFront distribution |
 | VPC endpoints | (always on) | `true` | `true` | `true` | ECR/SSM/CW interface + S3 gateway endpoints — deployed in dev today |
 | `enable_waf` | bool | `false` | `false` | `true` | attach WAF ACL to CloudFront |
@@ -409,6 +412,10 @@ features = {
 | `enable_container_insights` | bool | `false` | `true` | `true` | ECS Container Insights |
 | `multi_az_ecs` | bool | `false` | `true` | `true` | ECS tasks spread across AZs |
 | `enable_backup` | bool | `false` | `false` | `true` | AWS Backup plans for S3 |
+
+The `enable_dns` and `enable_cloudfront` flags interact (custom-domain routing,
+the two-region ACM cert requirement, and all four on/off combinations) — see
+[`docs/dns-and-tls.md`](docs/dns-and-tls.md).
 
 ### Usage in Modules
 
