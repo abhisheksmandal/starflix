@@ -94,6 +94,12 @@ variable "domain_name" {
   default     = "starflix.com"
 }
 
+variable "public_frontend_url" {
+  type        = string
+  description = "Public URL the frontend is served from (e.g. http://abhishek-frontend.1020dev.com when a custom domain CNAMEs to the frontend ALB). Used as the backend CORS origin. Empty = use the frontend ALB DNS name."
+  default     = ""
+}
+
 variable "enable_dns" {
   type        = bool
   description = "Deploy Route 53 hosted zone and ACM certificate. Disable to skip DNS provisioning."

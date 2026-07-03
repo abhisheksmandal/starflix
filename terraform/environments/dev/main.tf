@@ -319,7 +319,7 @@ module "ecs_service_backend" {
     },
     {
       name  = "FRONTEND_URL"
-      value = "http://${module.alb.frontend_alb_dns_name}"
+      value = var.public_frontend_url != "" ? var.public_frontend_url : "http://${module.alb.frontend_alb_dns_name}"
     }
   ]
 
