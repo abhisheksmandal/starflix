@@ -159,6 +159,36 @@ variable "enable_container_insights" {
   default     = false
 }
 
+variable "enable_service_autoscaling" {
+  type        = bool
+  description = "Enable Application Auto Scaling (target-tracking) for the ECS services. When true, task counts scale on CPU/memory between the min/max below."
+  default     = false
+}
+
+variable "service_autoscaling_min" {
+  type        = number
+  description = "Minimum tasks per service under auto-scaling. Set >= 2 for high availability (no single-task SPOF)."
+  default     = 1
+}
+
+variable "service_autoscaling_max" {
+  type        = number
+  description = "Maximum tasks per service under auto-scaling. Bounded by ECS host capacity (ecs_max_size)."
+  default     = 4
+}
+
+variable "service_autoscaling_cpu_target" {
+  type        = number
+  description = "Target average CPU utilization (%) that triggers service scaling."
+  default     = 60
+}
+
+variable "service_autoscaling_memory_target" {
+  type        = number
+  description = "Target average memory utilization (%) that triggers service scaling."
+  default     = 70
+}
+
 variable "enable_cloudfront" {
   type        = bool
   description = "Deploy CloudFront distribution. Disable for dev to save cost."

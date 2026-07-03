@@ -142,6 +142,13 @@ module "alb" {
   enable_deletion_protection = var.enable_deletion_protection
 
   tags = local.common_tags
+
+  # The ALB references the VPC's subnets/vpc_id, but NOT the Internet Gateway,
+  # so Terraform would otherwise detach the IGW in parallel with deleting the
+  # ALB. AWS refuses to detach an IGW while any public ENI (the ALB owns two)
+  # still exists in the VPC, which deadlocks the destroy for ~20 min. Depending
+  # on the whole VPC module forces every ALB resource to be destroyed first.
+  depends_on = [module.vpc]
 }
 
 ############################################
@@ -260,6 +267,12 @@ module "ecs_service_frontend" {
 
   target_group_arn = module.alb.frontend_target_group_arn
 
+  enable_autoscaling        = var.enable_service_autoscaling
+  autoscaling_min_capacity  = var.service_autoscaling_min
+  autoscaling_max_capacity  = var.service_autoscaling_max
+  autoscaling_cpu_target    = var.service_autoscaling_cpu_target
+  autoscaling_memory_target = var.service_autoscaling_memory_target
+
   environment_variables = [
     {
       name  = "NODE_ENV"
@@ -307,6 +320,12 @@ module "ecs_service_backend" {
   desired_count = var.ecs_desired_capacity
 
   target_group_arn = module.alb.backend_target_group_arn
+
+  enable_autoscaling        = var.enable_service_autoscaling
+  autoscaling_min_capacity  = var.service_autoscaling_min
+  autoscaling_max_capacity  = var.service_autoscaling_max
+  autoscaling_cpu_target    = var.service_autoscaling_cpu_target
+  autoscaling_memory_target = var.service_autoscaling_memory_target
 
   environment_variables = [
     {
@@ -402,9 +421,15 @@ module "codebuild" {
 
   tags = local.common_tags
 
-  # Ensure the GitHub token secret value exists before the webhooks,
-  # which validate the CodeBuild role's access to a populated secret.
-  depends_on = [module.secrets]
+  # Ensure the GitHub token secret value exists before the webhooks, which
+  # validate the CodeBuild role's access to a populated secret. module.iam is
+  # required too: the role's secret-read grant lives there
+  # (aws_iam_role_policy_attachment.codebuild). This module only references the
+  # role ARN, not that attachment, so without this Terraform tears the grant
+  # down before the webhook and DeleteWebhook fails ("role does not have access
+  # to retrieve secret"). Depending on the whole module forces webhooks to be
+  # destroyed before the grant.
+  depends_on = [module.secrets, module.iam]
 }
 
 ############################################
