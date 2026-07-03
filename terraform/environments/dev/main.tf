@@ -386,8 +386,9 @@ module "codebuild" {
   backend_repo_url  = module.ecr.backend_repository_url
 
   # Public backend API URL baked into the frontend build (Option A: the
-  # browser calls the backend ALB directly instead of via the nginx proxy).
-  frontend_api_url = "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
+  # browser calls the backend directly instead of via the nginx proxy).
+  # Prefer a public backend domain when set; otherwise the raw backend ALB DNS.
+  frontend_api_url = var.public_backend_url != "" ? var.public_backend_url : "http://${module.alb.backend_alb_dns_name}:${var.backend_port}"
 
   frontend_cluster_name = module.ecs_cluster.cluster_name
   # Deterministic service names (not module outputs) so CodeBuild does NOT depend

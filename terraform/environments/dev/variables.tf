@@ -100,6 +100,12 @@ variable "public_frontend_url" {
   default     = ""
 }
 
+variable "public_backend_url" {
+  type        = string
+  description = "Public URL of the backend API (e.g. http://abhishek-backend.1020dev.com:4000 when a custom domain CNAMEs to the backend ALB). Baked into the frontend build as VITE_API_URL. Empty = use the backend ALB DNS name. Requires a frontend rebuild after change."
+  default     = ""
+}
+
 variable "enable_dns" {
   type        = bool
   description = "Deploy Route 53 hosted zone and ACM certificate. Disable to skip DNS provisioning."
