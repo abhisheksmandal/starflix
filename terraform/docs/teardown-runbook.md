@@ -246,6 +246,39 @@ but they are stored in the gitignored `terraform.tfvars`, so a later
 
 ---
 
+## Clean up stale GitHub webhooks (avoid duplicate builds)
+
+When a CodeBuild project is destroyed and later recreated with the **same name**,
+its GitHub webhook can survive teardown — an interrupted destroy, or the
+`state rm` workaround above (which removes the CodeBuild project server-side but
+may leave the GitHub-side hook), both leave an orphan. On the next apply the old
+hook's encrypted token still routes to the same-named project, so a single `git
+push` triggers **two builds of the same commit**.
+
+After a destroy/re-apply cycle, check the repo has exactly **two** CodeBuild
+webhooks (one per project):
+
+```bash
+# TOKEN = the GitHub PAT (repo + admin:repo_hook). Repo: abhisheksmandal/starflix
+curl -s -H "Authorization: token $TOKEN" \
+  https://api.github.com/repos/abhisheksmandal/starflix/hooks \
+  | python3 -c "import sys,json;[print(h['id'], h['config'].get('url','')[:60]) for h in json.load(sys.stdin)]"
+
+# The two LIVE hook IDs (do NOT delete these) — match against the current projects:
+aws codebuild batch-get-projects \
+  --names starflix-dev-frontend-build starflix-dev-backend-build \
+  --query "projects[].webhook.url" --output text   # each ends in /hooks/<id>
+
+# Delete any OTHER codebuild.*.amazonaws.com hook (orphan):
+curl -s -X DELETE -H "Authorization: token $TOKEN" \
+  https://api.github.com/repos/abhisheksmandal/starflix/hooks/<ORPHAN_ID>   # -> HTTP 204
+```
+
+Deleting orphan GitHub hooks is safe — they aren't in Terraform state, and the
+live webhooks (tracked via the CodeBuild API) are untouched.
+
+---
+
 ## Post-teardown verification
 
 ```bash
