@@ -23,17 +23,33 @@ s3_force_destroy = true
 
 domain_name = "starflix.com"
 
+# Custom domain CNAMEd to the frontend ALB. Used as the backend CORS origin
+# so API calls from this origin aren't blocked. HTTP only (ALB has no TLS).
+public_frontend_url = "http://abhishek-frontend.domain.com"
+
+# Custom domain CNAMEd to the backend ALB (port 4000, HTTP). Baked into the
+# frontend build as VITE_API_URL — requires a frontend rebuild after change.
+public_backend_url = "http://abhishek-backend.domain.com:4000"
+
 enable_dns = false
 
-enable_deletion_protection = false
+enable_deletion_protection   = false
 secrets_recovery_window_days = 0
 
 ecs_instance_type         = "t3.small"
 ecs_ami_id                = ""
-ecs_desired_capacity      = 1
+ecs_desired_capacity      = 3
 ecs_min_size              = 1
-ecs_max_size              = 3
+ecs_max_size              = 5
 enable_container_insights = false
+
+# ECS service auto-scaling (target-tracking on CPU + memory).
+# min = 2 removes the single-task SPOF; hosts follow via the capacity provider.
+enable_service_autoscaling        = true
+service_autoscaling_min           = 2
+service_autoscaling_max           = 4
+service_autoscaling_cpu_target    = 60
+service_autoscaling_memory_target = 70
 
 enable_cloudfront = false
 enable_waf        = false
@@ -49,15 +65,15 @@ cloudwatch_cpu_threshold           = 80
 cloudwatch_memory_threshold        = 80
 cloudwatch_5xx_threshold           = 10
 cloudwatch_response_time_threshold = 5
-github_repo_url = "https://github.com/abhisheksmandal/starflix.git"
-github_branch   = "main"
+github_repo_url                    = "https://github.com/abhisheksmandal/starflix.git"
+github_branch                      = "main"
 
 # GitHub PAT for CodeBuild source auth + webhook registration.
 # Scopes required: repo, admin:repo_hook.
 # Prefer setting via env var (TF_VAR_github_token) over committing to a file.
 # Leave empty to manage the secret value out-of-band via the AWS CLI.
-# github_token = "ghp_xxxxxxxxxxxxxxxxxxxx"
+github_token = "ghp_xxxxxxxxxxxxxxxxxxxx"
 
 # TMDB API key for backend metadata enrichment.
 # Leave empty/unset to run the backend with placeholder images.
-# tmdb_api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+tmdb_api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
