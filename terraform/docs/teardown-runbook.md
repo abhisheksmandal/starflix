@@ -8,6 +8,40 @@ low-memory box also see the OOM section below (`-parallelism` / CLI fallback).
 
 ---
 
+## Companion — `scripts/health-check.sh` (verify before you destroy)
+
+`scripts/health-check.sh` is the inverse of this runbook: a **read-only** check
+that every resource Terraform provisioned actually exists and is healthy in AWS.
+Use it as a bookend around teardown/rebuild:
+
+- **Before a destroy** — confirm what you're about to tear down is the stack you
+  think it is, and capture a clean baseline.
+- **After a re-apply** — confirm the rebuild came up healthy (services running,
+  ALB targets healthy, ECR seeded, live HTTP probes returning 2xx).
+
+```bash
+cd terraform
+scripts/health-check.sh dev             # env defaults to dev
+scripts/health-check.sh dev ap-south-1  # optional explicit region
+```
+
+It shares this runbook's conventions — env defaults to `dev`, region is
+auto-detected from the environment's `terraform.tfvars`, and resource IDs come
+from `terraform output` (falling back to the naming convention when state is
+unavailable). It then queries AWS for the VPC/subnets/NAT, security groups, VPC
+endpoints, ECR repos (and that images were pushed), IAM roles, S3 buckets,
+secrets, ALBs + target-group health, the ECS cluster/ASG/container instances,
+ECS services (running vs desired), CloudWatch dashboard + alarms, CodeBuild
+projects, and finally live HTTP probes against both ALBs. It prints a
+colour-coded PASS/WARN/FAIL tally and **exits non-zero if anything FAILs**
+(WARNs don't fail), so it's safe to gate CI or a pre-destroy check on it.
+
+> After teardown, expect it to FAIL wholesale — that's the job of the
+> [Post-teardown verification](#post-teardown-verification) below instead. Run
+> `health-check.sh` to confirm a *successful* stack, not an empty one.
+
+---
+
 ## The problem — ECS-on-EC2 destroy deadlock
 
 A plain `terraform destroy` on this stack **hangs** partway through, even though the
@@ -298,4 +332,6 @@ All should return empty.
 
 ---
 
-*Related: `ARCHITECTURE.md` §0 (deployment snapshot) and the ECS cluster module.*
+*Related: `scripts/health-check.sh` (verify a healthy stack — see the Companion
+section above), `ARCHITECTURE.md` §0 (deployment snapshot) and the ECS cluster
+module.*
