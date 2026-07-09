@@ -45,6 +45,16 @@ resource "aws_lb_target_group" "frontend" {
 
   deregistration_delay = 30
 
+  # Pins a browser to one task version for the life of its session so a single
+  # page load can't fetch index.html from a new task and a content-hashed JS
+  # chunk from an old (or vice versa) during a rolling deploy, which 404s and
+  # leaves a blank page. Duration only needs to outlast one rollout window.
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = 3600
+    enabled         = true
+  }
+
   tags = merge(var.tags, {
     Name    = "${var.name_prefix}-tg-frontend"
     Service = "frontend"
