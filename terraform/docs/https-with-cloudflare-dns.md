@@ -1,8 +1,8 @@
 # Enabling HTTPS with Cloudflare DNS
 
-**Date:** 2026-07-06
+**Date:** 2026-07-06 (Console walkthrough added 2026-07-09)
 **Environment:** `dev` (`ap-south-1`)
-**Status:** Options — decision pending
+**Status:** Option A confirmed. Console walkthrough documented below; Terraform codification pending (see §Reconcile).
 
 ---
 
@@ -213,6 +213,134 @@ proxy (Option B) can be layered on later without touching AWS.
    `public_backend_url` is baked into the frontend build as `VITE_API_URL`, so a
    **CodeBuild frontend rebuild is required** after this change — otherwise the
    HTTPS frontend calls `http://…:4000` and the browser blocks it (mixed content).
+
+---
+
+## Implementation walkthrough — Option A (AWS Console / GUI)
+
+> This is the procedure actually used to stand up HTTPS in `dev` before it's
+> codified back into Terraform. Every resource touched here (ALB listeners,
+> target groups, ECS task defs) is normally Terraform-managed — doing this by
+> hand works because the HTTPS listener resources in the code are gated
+> behind `count = var.enable_https ? 1 : 0` (currently `false`), so Terraform
+> doesn't know these console-made resources exist and won't touch them. Just
+> don't flip `enable_https = true` in tfvars later without pointing it at the
+> same cert ARN created here — otherwise `apply` will try to create a second
+> `:443` listener and fail with "listener already exists." See
+> [Reconcile with Terraform](#reconcile-with-terraform-do-this-before-your-next-terraform-apply) at the end.
+
+### Phase 1 — Request the ACM certificate
+
+1. **AWS Console → top-right region switcher → select Asia Pacific (Mumbai)
+   `ap-south-1`.** A regional ALB needs a cert issued in its own region — not
+   `us-east-1` (that's only for CloudFront).
+2. **Certificate Manager (ACM) → Request a certificate → Request a public
+   certificate** → Next.
+3. **Domain name:** `abhishek-frontend.1020dev.com`
+   Click **Add another name to this certificate** → `abhishek-backend.1020dev.com`
+4. **Validation method:** DNS validation. Key algorithm: RSA 2048 (default).
+5. **Request.** Status shows **Pending validation**.
+
+### Phase 2 — Validate via Cloudflare DNS
+
+1. Open the certificate in ACM. Under **Domains**, click **Export DNS
+   configuration to a file** to get both CNAME name/value pairs cleanly.
+2. In **Cloudflare → zone → DNS → Records → Add record**, for *each* of the
+   two entries:
+   - Type: `CNAME`
+   - Name: the ACM CNAME name **with the `.1020dev.com` zone suffix and
+     trailing dot stripped** (Cloudflare appends the zone automatically) —
+     e.g. `_a79865eb4cd1a6ab.abhishek-frontend.1020dev.com.` → enter
+     `_a79865eb4cd1a6ab.abhishek-frontend`.
+   - Target: the ACM CNAME value (trailing dot optional, Cloudflare accepts both).
+   - **Proxy status: DNS only (grey cloud)** — proxying breaks validation.
+3. Save both records, then refresh ACM until **Status: Issued** (usually a
+   few minutes, occasionally up to ~30 min for propagation).
+
+### Phase 3 — Frontend ALB: attach the cert, add HTTPS
+
+1. **EC2 Console → Load Balancers →** `starflix-dev-alb-frontend` → **Listeners
+   tab → Add listener**:
+   - Protocol **HTTPS**, Port **443**
+   - Security policy: `ELBSecurityPolicy-TLS13-1-2-2021-06` (matches the rest of the stack)
+   - Default SSL certificate: **From ACM** → the cert just issued
+   - Default action: **Forward to** → existing frontend target group (`starflix-dev-tg-frontend`)
+2. Lock down HTTP: select the existing `:80` listener → **Actions → Edit
+   listener** → change default action from *Forward* to **Redirect** →
+   Protocol `HTTPS`, Port `443`, Status code `HTTP 301` → Save.
+
+No security group change needed — the ALB security group already has an
+inbound `443` rule (`aws_vpc_security_group_ingress_rule.alb_https` in
+`modules/security-groups/main.tf`), shared by both ALBs.
+
+### Phase 4 — Backend ALB: same treatment
+
+1. **EC2 Console → Load Balancers →** `starflix-dev-alb-backend` → **Add
+   listener**: Protocol **HTTPS**, Port **443**, same TLS policy, same ACM
+   cert (already covers the backend hostname as a SAN) → **Forward to** the
+   existing backend target group. The target group still points at
+   container port `4000` — only the externally-exposed ALB port changes, no
+   ECS/task changes needed.
+2. Leave the old `:4000` HTTP listener running for now — the currently-live
+   frontend build still calls `http://…:4000`, so removing it early breaks
+   production until Phase 5 is done.
+
+### Phase 5 — Rebuild the frontend pointed at HTTPS backend
+
+The browser-direct API URL is baked into the frontend's JS bundle at build
+time — a Console cert alone doesn't change that.
+
+1. **CodeBuild Console → Build projects →** `starflix-dev-frontend-build` →
+   **Edit → Environment → Additional configuration → Environment variables**.
+2. `VITE_API_URL` → change to `https://abhishek-backend.1020dev.com` (no
+   `:4000`) → Save.
+3. **Start build** (builds from `main`, current HEAD). With the
+   task-revision-per-build CI change, it registers a new task definition
+   revision and deploys automatically on success.
+
+### Phase 6 — Update backend CORS to trust the HTTPS frontend origin
+
+The backend's CORS check (`backend/src/index.js:20`) allows exactly whatever
+`FRONTEND_URL` is set to. Once the frontend serves over HTTPS, its browser
+`Origin` header becomes `https://abhishek-frontend.1020dev.com` — the
+backend must match that exactly or CORS rejects every request.
+
+1. **ECS Console → Task definitions →** `starflix-dev-td-backend` → latest
+   revision → **Create new revision**.
+2. Change `FRONTEND_URL` from `http://abhishek-frontend.1020dev.com` to
+   `https://abhishek-frontend.1020dev.com` → **Create**.
+3. **Clusters → cluster → Services →** backend service → **Update service**
+   → select the new revision → force new deployment.
+
+### Phase 7 — Verify
+
+- `https://abhishek-frontend.1020dev.com` loads with a valid padlock, no
+  mixed-content warnings in devtools.
+- `https://abhishek-backend.1020dev.com/api/content/featured` returns JSON directly.
+- Frontend's Network tab shows API calls going to
+  `https://abhishek-backend.1020dev.com/...` (no `:4000`, no `http://`).
+- No `blocked by CORS policy` errors in the browser console.
+
+Once clean, the backend's old `:4000` HTTP listener can be removed as a
+deliberate follow-up — not part of this pass.
+
+### Reconcile with Terraform (do this before your next `terraform apply`)
+
+- Import the ACM cert as an `aws_acm_certificate` resource (or just
+  reference its ARN directly).
+- Set `enable_https = true` and point `acm_certificate_arn` at that ARN
+  (bypassing the `module.dns[0]` path — see the HCL outline above).
+- Update `terraform.tfvars`:
+  ```hcl
+  public_frontend_url = "https://abhishek-frontend.1020dev.com"
+  public_backend_url  = "https://abhishek-backend.1020dev.com"
+  ```
+
+Until this is done, HTTPS works but lives outside Terraform's view — a
+future `apply` won't know about the console-made listeners/cert, and the
+`http://` values still sitting in tfvars would silently revert
+`FRONTEND_URL`/`VITE_API_URL` if anyone re-applies `main.tf` without first
+making this change.
 
 ---
 
