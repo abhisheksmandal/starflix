@@ -4,6 +4,12 @@
 
 locals {
   ecr_registry = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+
+  # Deterministic task definition family names (matches ecs-service module's
+  # "${name_prefix}-td-${service_name}" convention) so buildspecs can register
+  # new revisions without CodeBuild depending on the ecs-service module outputs.
+  frontend_task_family = "${var.name_prefix}-td-frontend"
+  backend_task_family  = "${var.name_prefix}-td-backend"
 }
 
 ############################################
@@ -56,6 +62,11 @@ resource "aws_codebuild_project" "frontend" {
     environment_variable {
       name  = "ECS_SERVICE"
       value = var.frontend_service_name
+    }
+
+    environment_variable {
+      name  = "TASK_FAMILY"
+      value = local.frontend_task_family
     }
 
     # Baked into the SPA at build time so the browser calls the public
@@ -141,6 +152,11 @@ resource "aws_codebuild_project" "backend" {
     environment_variable {
       name  = "ECS_SERVICE"
       value = var.backend_service_name
+    }
+
+    environment_variable {
+      name  = "TASK_FAMILY"
+      value = local.backend_task_family
     }
   }
 

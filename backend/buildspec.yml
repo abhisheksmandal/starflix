@@ -11,4 +11,16 @@ phases:
     commands:
       - docker push $ECR_REPO_URL:$IMAGE_TAG
       - docker push $ECR_REPO_URL:latest
-      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION || echo "ECS service not available yet (initial seed build); skipping deploy."
+      - |
+        if aws ecs describe-task-definition --task-definition $TASK_FAMILY --region $AWS_REGION > current-task-def.json 2>/dev/null; then
+          jq --arg IMAGE "$ECR_REPO_URL:$IMAGE_TAG" '
+            .taskDefinition.containerDefinitions[0].image = $IMAGE
+            | .taskDefinition
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ' current-task-def.json > new-task-def.json
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition --region $AWS_REGION --cli-input-json file://new-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "Registered $NEW_TASK_DEF_ARN"
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $NEW_TASK_DEF_ARN --region $AWS_REGION
+        else
+          echo "Task definition $TASK_FAMILY not found yet (initial seed build); skipping deploy."
+        fi
