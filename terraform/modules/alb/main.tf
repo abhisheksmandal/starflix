@@ -169,6 +169,8 @@ resource "aws_lb_target_group" "backend" {
 }
 
 # ── Backend HTTP Listener ──────────────────────────────────────────────────────
+# Left forwarding (not redirected) even when HTTPS is enabled, so the plain
+# :backend_port endpoint keeps working for anything not yet migrated to HTTPS.
 
 resource "aws_lb_listener" "backend_http" {
   load_balancer_arn = aws_lb.backend.arn
@@ -182,6 +184,31 @@ resource "aws_lb_listener" "backend_http" {
 
   tags = merge(var.tags, {
     Name    = "${var.name_prefix}-backend-http-listener"
+    Service = "backend"
+  })
+}
+
+# ── Backend HTTPS Listener ─────────────────────────────────────────────────────
+# Only created when an ACM certificate ARN is provided. Terminates TLS on 443
+# and forwards plaintext to the same target group (container still listens on
+# backend_port internally) — no ECS/task changes needed to expose 443.
+
+resource "aws_lb_listener" "backend_https" {
+  count = var.enable_https ? 1 : 0
+
+  load_balancer_arn = aws_lb.backend.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.backend_acm_certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+
+  tags = merge(var.tags, {
+    Name    = "${var.name_prefix}-backend-https-listener"
     Service = "backend"
   })
 }

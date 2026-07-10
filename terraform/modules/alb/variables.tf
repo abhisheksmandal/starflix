@@ -25,7 +25,13 @@ variable "alb_security_group_id" {
 
 variable "acm_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for the HTTPS listeners. Used as the listener certificate value when enable_https is true."
+  description = "ACM certificate ARN for the frontend HTTPS listener. Used as the listener certificate value when enable_https is true."
+  default     = null
+}
+
+variable "backend_acm_certificate_arn" {
+  type        = string
+  description = "ACM certificate ARN for the backend HTTPS listener. Used as the listener certificate value when enable_https is true."
   default     = null
 }
 

@@ -111,6 +111,24 @@ variable "enable_dns" {
   description = "Deploy Route 53 hosted zone and ACM certificate. Disable to skip DNS provisioning."
   default     = false
 }
+
+variable "enable_https" {
+  type        = bool
+  description = "Request ACM certificates (one per ALB) and enable the HTTPS listeners on both the frontend and backend ALBs. Independent of enable_dns/enable_cloudfront — this path is for a Cloudflare-DNS setup (validation CNAMEs added by hand), not the Route 53 module."
+  default     = false
+}
+
+variable "frontend_domain_name" {
+  type        = string
+  description = "Public hostname the frontend ALB is CNAMEd to (e.g. abhishek-frontend.1020dev.com). Used as the frontend ACM certificate's domain when enable_https is true."
+  default     = ""
+}
+
+variable "backend_domain_name" {
+  type        = string
+  description = "Public hostname the backend ALB is CNAMEd to (e.g. abhishek-backend.1020dev.com). Used as the backend ACM certificate's domain when enable_https is true."
+  default     = ""
+}
 variable "enable_deletion_protection" {
   type        = bool
   description = "Enable ALB deletion protection. Should be true in prod only."

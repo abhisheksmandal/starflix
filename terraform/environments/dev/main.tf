@@ -122,6 +122,25 @@ module "dns" {
 }
 
 ############################################
+# ACM Certificates — Frontend & Backend ALBs
+# Cloudflare-DNS path (separate from the Route 53
+# `dns` module above): one cert per ALB, validation
+# CNAMEs added to Cloudflare by hand. See
+# terraform/docs/https-with-cloudflare-dns.md.
+############################################
+
+module "acm" {
+  source = "../../modules/acm-certs"
+  count  = var.enable_https ? 1 : 0
+
+  name_prefix          = local.name_prefix
+  frontend_domain_name = var.frontend_domain_name
+  backend_domain_name  = var.backend_domain_name
+
+  tags = local.common_tags
+}
+
+############################################
 # ALB
 ############################################
 
@@ -133,8 +152,9 @@ module "alb" {
   public_subnet_ids     = module.vpc.public_subnet_ids
   alb_security_group_id = module.security_groups.alb_sg_id
 
-  acm_certificate_arn = local.features.enable_dns ? module.dns[0].acm_certificate_arn : null
-  enable_https        = local.features.enable_dns
+  acm_certificate_arn         = var.enable_https ? module.acm[0].frontend_certificate_arn : null
+  backend_acm_certificate_arn = var.enable_https ? module.acm[0].backend_certificate_arn : null
+  enable_https                = var.enable_https
 
   frontend_port = var.frontend_port
   backend_port  = var.backend_port

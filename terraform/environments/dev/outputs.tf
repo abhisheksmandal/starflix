@@ -158,6 +158,23 @@ output "cloudfront_acm_certificate_arn" {
   value       = local.features.enable_dns ? module.dns[0].cloudfront_acm_certificate_arn : null
 }
 
+# ── ACM (Cloudflare-DNS path) ───────────────────────────────────────────────────
+
+output "frontend_acm_certificate_arn" {
+  description = "ARN of the frontend ALB's ACM certificate. Usable immediately; PENDING_VALIDATION until the Cloudflare CNAME below is added."
+  value       = var.enable_https ? module.acm[0].frontend_certificate_arn : null
+}
+
+output "backend_acm_certificate_arn" {
+  description = "ARN of the backend ALB's ACM certificate. Usable immediately; PENDING_VALIDATION until the Cloudflare CNAME below is added."
+  value       = var.enable_https ? module.acm[0].backend_certificate_arn : null
+}
+
+output "acm_validation_records" {
+  description = "DNS validation records to add in Cloudflare (type CNAME, proxy status DNS-only) so both certificates move from PENDING_VALIDATION to ISSUED."
+  value       = var.enable_https ? module.acm[0].validation_records : null
+}
+
 # ── ALB ────────────────────────────────────────────────────────────────────────
 
 output "frontend_alb_dns_name" {
