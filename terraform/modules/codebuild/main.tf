@@ -275,14 +275,14 @@ resource "aws_iam_role_policy_attachment" "codebuild_ecs_deploy" {
 
 ############################################
 # CodeBuild Webhooks — Auto Build & Deploy
-# Triggers on git pushes to the main branch
+# Triggers on git pushes to the feature/https-alb-acm branch
 ############################################
 
 resource "aws_codebuild_webhook" "frontend" {
   project_name = aws_codebuild_project.frontend.name
   build_type   = "BUILD"
 
-  # All filters in a group are ANDed: push to main AND a change under frontend/.
+  # All filters in a group are ANDed: push to feature/https-alb-acm AND a change under frontend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -291,7 +291,7 @@ resource "aws_codebuild_webhook" "frontend" {
 
     filter {
       type    = "HEAD_REF"
-      pattern = "^refs/heads/main$"
+      pattern = "^refs/heads/feature/https-alb-acm$"
     }
 
     filter {
@@ -305,7 +305,7 @@ resource "aws_codebuild_webhook" "backend" {
   project_name = aws_codebuild_project.backend.name
   build_type   = "BUILD"
 
-  # All filters in a group are ANDed: push to main AND a change under backend/.
+  # All filters in a group are ANDed: push to feature/https-alb-acm AND a change under backend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -314,7 +314,7 @@ resource "aws_codebuild_webhook" "backend" {
 
     filter {
       type    = "HEAD_REF"
-      pattern = "^refs/heads/main$"
+      pattern = "^refs/heads/feature/https-alb-acm$"
     }
 
     filter {

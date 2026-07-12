@@ -38,7 +38,7 @@ export default function Navbar({ onSearch, searchQuery }) {
       <div className="navbar__left">
         <div className="navbar__logo">
           <span className="navbar__logo-star">★</span>
-          <span className="navbar__logo-text">STARFLIX</span>
+          <span className="navbar__logo-text">STARFLIXXX</span>
         </div>
         <ul className="navbar__links">
           <li className="navbar__link navbar__link--active">Home</li>
