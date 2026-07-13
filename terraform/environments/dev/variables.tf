@@ -96,13 +96,13 @@ variable "domain_name" {
 
 variable "public_frontend_url" {
   type        = string
-  description = "Public URL the frontend is served from (e.g. http://abhishek-frontend.1020dev.com when a custom domain CNAMEs to the frontend ALB). Used as the backend CORS origin. Empty = use the frontend ALB DNS name."
+  description = "Public URL the frontend is served from (e.g. https://abhishek-frontend.1020dev.com when a custom domain CNAMEs to the frontend ALB). Used as the backend CORS origin. Empty = use the frontend ALB DNS name."
   default     = ""
 }
 
 variable "public_backend_url" {
   type        = string
-  description = "Public URL of the backend API (e.g. http://abhishek-backend.1020dev.com:4000 when a custom domain CNAMEs to the backend ALB). Baked into the frontend build as VITE_API_URL. Empty = use the backend ALB DNS name. Requires a frontend rebuild after change."
+  description = "Public URL of the backend API (e.g. https://abhishek-backend.1020dev.com when a custom domain CNAMEs to the backend ALB's HTTPS listener). Baked into the frontend build as VITE_API_URL. Empty = use the backend ALB DNS name. Requires a frontend rebuild after change."
   default     = ""
 }
 
@@ -114,19 +114,19 @@ variable "enable_dns" {
 
 variable "enable_https" {
   type        = bool
-  description = "Request ACM certificates (one per ALB) and enable the HTTPS listeners on both the frontend and backend ALBs. Independent of enable_dns/enable_cloudfront — this path is for a Cloudflare-DNS setup (validation CNAMEs added by hand), not the Route 53 module."
+  description = "Enable the HTTPS listeners on both the frontend and backend ALBs, attaching the manually-provisioned ACM certificates below. Independent of enable_dns/enable_cloudfront — this path is for a Cloudflare-DNS setup, not the Route 53 module."
   default     = false
 }
 
-variable "frontend_domain_name" {
+variable "frontend_acm_certificate_arn" {
   type        = string
-  description = "Public hostname the frontend ALB is CNAMEd to (e.g. abhishek-frontend.1020dev.com). Used as the frontend ACM certificate's domain when enable_https is true."
+  description = "ARN of a manually-provisioned ACM certificate (ap-south-1) for the frontend ALB's HTTPS listener. Managed outside Terraform so the ALB never blocks on ACM DNS validation. Required when enable_https is true."
   default     = ""
 }
 
-variable "backend_domain_name" {
+variable "backend_acm_certificate_arn" {
   type        = string
-  description = "Public hostname the backend ALB is CNAMEd to (e.g. abhishek-backend.1020dev.com). Used as the backend ACM certificate's domain when enable_https is true."
+  description = "ARN of a manually-provisioned ACM certificate (ap-south-1) for the backend ALB's HTTPS listener. Managed outside Terraform so the ALB never blocks on ACM DNS validation. Required when enable_https is true."
   default     = ""
 }
 variable "enable_deletion_protection" {

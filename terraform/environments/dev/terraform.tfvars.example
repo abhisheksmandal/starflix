@@ -23,15 +23,24 @@ s3_force_destroy = true
 
 domain_name = "starflix.com"
 
-# Custom domain CNAMEd to the frontend ALB. Used as the backend CORS origin
-# so API calls from this origin aren't blocked. HTTP only (ALB has no TLS).
-public_frontend_url = "http://abhishek-frontend.domain.com"
+# Custom domain CNAMEd to the frontend ALB (HTTPS listener). Used as the backend
+# CORS origin so API calls from this origin aren't blocked.
+public_frontend_url = "https://abhishek-frontend.domain.com"
 
-# Custom domain CNAMEd to the backend ALB (port 4000, HTTP). Baked into the
+# Custom domain CNAMEd to the backend ALB (HTTPS listener on :443). Baked into the
 # frontend build as VITE_API_URL — requires a frontend rebuild after change.
-public_backend_url = "http://abhishek-backend.domain.com:4000"
+public_backend_url = "https://abhishek-backend.domain.com"
 
 enable_dns = false
+
+# HTTPS via Cloudflare DNS. ACM certificates are provisioned and validated
+# MANUALLY (outside Terraform) and kept, so the ALB never has to wait on ACM
+# DNS validation. Set enable_https = true, then paste the issued cert ARNs below.
+enable_https = false
+
+# Manually-provisioned ACM certificate ARNs (ap-south-1) for the ALB HTTPS listeners.
+frontend_acm_certificate_arn = "arn:aws:acm:ap-south-1:000000000000:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+backend_acm_certificate_arn  = "arn:aws:acm:ap-south-1:000000000000:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 enable_deletion_protection   = false
 secrets_recovery_window_days = 0

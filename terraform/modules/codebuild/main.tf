@@ -25,6 +25,9 @@ resource "aws_codebuild_project" "frontend" {
   service_role  = var.codebuild_role_arn
   build_timeout = var.build_timeout_minutes
 
+  # Default branch that manual/seed builds (start-build without --source-version) check out.
+  source_version = var.github_branch
+
   artifacts {
     type      = "S3"
     location  = var.artifacts_bucket_name
@@ -114,6 +117,9 @@ resource "aws_codebuild_project" "backend" {
   description   = "Builds and deploys the Starflix Strapi backend."
   service_role  = var.codebuild_role_arn
   build_timeout = var.build_timeout_minutes
+
+  # Default branch that manual/seed builds (start-build without --source-version) check out.
+  source_version = var.github_branch
 
   artifacts {
     type      = "S3"
@@ -275,14 +281,14 @@ resource "aws_iam_role_policy_attachment" "codebuild_ecs_deploy" {
 
 ############################################
 # CodeBuild Webhooks — Auto Build & Deploy
-# Triggers on git pushes to the feature/https-alb-acm branch
+# Triggers on git pushes to the configured build branch (var.github_branch)
 ############################################
 
 resource "aws_codebuild_webhook" "frontend" {
   project_name = aws_codebuild_project.frontend.name
   build_type   = "BUILD"
 
-  # All filters in a group are ANDed: push to feature/https-alb-acm AND a change under frontend/.
+  # All filters in a group are ANDed: push to the build branch AND a change under frontend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -291,7 +297,7 @@ resource "aws_codebuild_webhook" "frontend" {
 
     filter {
       type    = "HEAD_REF"
-      pattern = "^refs/heads/feature/https-alb-acm$"
+      pattern = "^refs/heads/${var.github_branch}$"
     }
 
     filter {
@@ -305,7 +311,7 @@ resource "aws_codebuild_webhook" "backend" {
   project_name = aws_codebuild_project.backend.name
   build_type   = "BUILD"
 
-  # All filters in a group are ANDed: push to feature/https-alb-acm AND a change under backend/.
+  # All filters in a group are ANDed: push to the build branch AND a change under backend/.
   filter_group {
     filter {
       type    = "EVENT"
@@ -314,7 +320,7 @@ resource "aws_codebuild_webhook" "backend" {
 
     filter {
       type    = "HEAD_REF"
-      pattern = "^refs/heads/feature/https-alb-acm$"
+      pattern = "^refs/heads/${var.github_branch}$"
     }
 
     filter {
