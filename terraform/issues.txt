@@ -1,0 +1,272 @@
+================================================================================
+STARFLIX TERRAFORM — REVIEW FINDINGS & SOLUTIONS
+================================================================================
+Reviewed: 2026-07-13  |  Branch: feature/https-alb-acm
+Scope: all 15 modules + environments/dev + bootstrap, cross-checked against
+       the app Dockerfiles (frontend/ and backend/).
+Baseline: `terraform validate` passes, `terraform fmt` is clean.
+
+Legend: [ ] = open   [x] = fixed
+Each item lists: WHERE, WHAT, WHY, FIX.
+================================================================================
+
+
+================================================================================
+HIGH — will break the frontend service
+================================================================================
+
+[ ] H1. Frontend ECS health check calls `curl`, which is not in the frontend image
+--------------------------------------------------------------------------------
+WHERE:
+  - modules/ecs-service/main.tf:69 (container healthCheck command)
+  - frontend/Dockerfile (base: nginx:1.27-alpine — no curl installed)
+  - backend/Dockerfile:4 (RUN apk add --no-cache curl — proof the pattern was known)
+
+WHAT:
+  The ecs-service module hardcodes, for EVERY service:
+      command = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}/health || exit 1"]
+  The backend image installs curl; the frontend image (nginx:1.27-alpine) does not.
+
+WHY IT BREAKS:
+  On the frontend task, `curl` is not found (exit 127) -> `|| exit 1` -> container
+  reported UNHEALTHY. The container is essential=true, so ECS repeatedly kills and
+  replaces the task; the frontend service never reaches steady state.
+  (The /health PATH is fine — nginx SPA fallback try_files -> /index.html returns 200.
+   The ONLY failure is the missing curl binary.)
+
+FIX (pick one):
+  Option A (simplest, mirrors backend): add to frontend/Dockerfile final stage:
+      RUN apk add --no-cache curl
+  Option B (no image change): switch the health check to BusyBox wget, which ships
+    in the alpine image. In modules/ecs-service/main.tf:
+      command = ["CMD-SHELL", "wget -q --spider http://localhost:${var.container_port}/health || exit 1"]
+    NOTE: if switching to wget, verify backend also has wget (or keep curl there).
+  Option C (most flexible): make the command/path a module variable
+    (e.g. var.health_check_command) and pass a curl variant for backend, wget for
+    frontend. Preferred long-term.
+  RECOMMENDED: Option A now (unblocks deploy); consider Option C later.
+
+
+================================================================================
+MEDIUM
+================================================================================
+
+[ ] M1. enable_https=true with empty/placeholder cert ARNs passes plan but fails apply
+--------------------------------------------------------------------------------
+WHERE:
+  - environments/dev/terraform.tfvars (frontend_acm_certificate_arn / backend_acm_certificate_arn
+    currently hold placeholder ARNs: ...000000000000... and ...111111111111...)
+  - modules/alb/main.tf:109, 203 (certificate_arn on the HTTPS listeners)
+  - environments/dev/variables.tf:121-131
+
+WHAT:
+  AWS rejects an HTTPS listener whose certificate_arn is empty or points to a
+  non-existent certificate. Plan does not catch this; apply will fail.
+
+WHY:
+  No precondition/validation asserts the ARN is real when enable_https is true.
+
+FIX:
+  1. Populate the two ARN vars with REAL issued ACM cert ARNs (ap-south-1) before apply.
+  2. Add a guardrail so a bad config fails at plan, not apply. Options:
+     - A `check` block in environments/dev, or
+     - A `precondition` on the ALB HTTPS listeners in modules/alb/main.tf:
+         lifecycle {
+           precondition {
+             condition     = !var.enable_https || (var.acm_certificate_arn != null && var.acm_certificate_arn != "")
+             error_message = "acm_certificate_arn is required when enable_https is true."
+           }
+         }
+       (same for backend_acm_certificate_arn on the backend HTTPS listener)
+
+
+[ ] M2. Backend API served in plaintext to the whole internet on :4000, even with HTTPS on
+--------------------------------------------------------------------------------
+WHERE:
+  - modules/alb/main.tf:175-189 (backend_http listener forwards, never redirects)
+  - modules/security-groups/main.tf:32-42 (alb_backend_http ingress: 4000 from 0.0.0.0/0)
+
+WHAT:
+  With HTTPS now the intended path (public_backend_url = https://...), the
+  unencrypted :4000 endpoint remains publicly reachable and forwards to the API.
+
+WHY IT MATTERS:
+  Public plaintext API surface. Comments call it intentional, but once clients are
+  on HTTPS it should be closed or redirected.
+
+FIX (pick one, once HTTPS clients are confirmed):
+  - Redirect 4000 -> 443 (make the backend_http listener a redirect action, mirroring
+    the frontend_http dynamic redirect when var.enable_https is true), OR
+  - Remove the aws_vpc_security_group_ingress_rule.alb_backend_http rule so :4000 is
+    no longer internet-reachable, OR
+  - Gate both behind a variable (e.g. var.expose_backend_http) defaulting to false.
+
+
+================================================================================
+LOW / CLEANUP
+================================================================================
+
+[ ] L1. Bootstrap creates an unused DynamoDB lock table + provider version drift
+--------------------------------------------------------------------------------
+WHERE:
+  - bootstrap/main.tf:62-75 (aws_dynamodb_table.tfstate_locks)
+  - environments/dev/backend.tf:9 (use_lockfile = true — S3-native locking)
+  - bootstrap/main.tf:2,6 (aws ~> 5.0, TF >= 1.10.0) vs
+    environments/dev/providers.tf:2,7 (aws ~> 6.0, TF ~> 1.15.0)
+
+WHAT:
+  The dev backend uses S3-native locking (use_lockfile) and never references the
+  DynamoDB table -> dead, billable resource. Provider/TF versions differ across
+  bootstrap vs env.
+
+FIX:
+  - Remove aws_dynamodb_table.tfstate_locks (and its output, if any) from bootstrap,
+    OR keep it and switch backend.tf to dynamodb_table = "..." if you prefer DynamoDB locking.
+  - Align bootstrap provider to aws ~> 6.0 and required_version to ~> 1.15.0 to match env.
+
+
+[ ] L2. private_subnet_cidrs length not validated against public_subnet_cidrs
+--------------------------------------------------------------------------------
+WHERE:
+  - environments/dev/variables.tf:45-54 (validation only checks >= 1)
+  - modules/vpc/main.tf:41-52 (private subnets index var.azs[count.index])
+  - environments/dev/locals.tf:11-15 (azs sliced to length(public_subnet_cidrs))
+
+WHAT:
+  Description says the two lists must have equal length, but nothing enforces it.
+  More private than public CIDRs -> var.azs index-out-of-range in the VPC module.
+
+FIX:
+  Add a validation on private_subnet_cidrs:
+    validation {
+      condition     = length(var.private_subnet_cidrs) == length(var.public_subnet_cidrs)
+      error_message = "private_subnet_cidrs must have the same number of entries as public_subnet_cidrs."
+    }
+
+
+[ ] L3. Container health-check path hardcoded (/health) while ALB paths are configurable
+--------------------------------------------------------------------------------
+WHERE:
+  - modules/ecs-service/main.tf:69 (hardcoded /health)
+  - modules/alb/variables.tf:56-66 (health_check_path_frontend="/", health_check_path_backend="/health")
+
+WHAT:
+  Frontend ALB target group checks "/" but the container checks "/health". Today both
+  pass only because nginx's SPA catch-all returns index.html (200) for /health.
+
+WHY IT MATTERS:
+  Latent coupling — a future `location /health { return 404; }` in nginx would silently
+  crash-loop the frontend.
+
+FIX:
+  Parameterize the container health-check path (and command) in ecs-service as a variable,
+  and pass the same path used for the ALB target group per service. (Combines well with H1 Option C.)
+
+
+[ ] L4. Misleading name: backend CodeBuild sets ECS_CLUSTER = var.frontend_cluster_name
+--------------------------------------------------------------------------------
+WHERE:
+  - modules/codebuild/main.tf:155
+
+WHAT:
+  Functionally correct (single shared cluster) but reads like a copy-paste bug.
+
+FIX:
+  Rename the module variable to var.cluster_name (single, shared) and use it for both
+  projects; OR add a clarifying comment that both services share one cluster.
+
+
+[ ] L5. Stale comments & "Strapi" leftovers (backend is Express; frontend is nginx-served SPA)
+--------------------------------------------------------------------------------
+WHERE / WHAT:
+  - modules/alb/main.tf:122-126 — "Internal-facing ... HTTP only — CloudFront terminates TLS";
+    the backend ALB is internal=false and now has an HTTPS listener. Update comment.
+  - modules/alb/variables.tf:40 — enable_https desc says "Pass local.features.enable_dns";
+    it is actually passed var.enable_https. Fix desc.
+  - "Strapi" references (backend is Express per CLAUDE.md):
+      modules/codebuild/main.tf (backend description/comment)
+      modules/ecs-service comments
+      modules/secrets/main.tf:152 (backend_url description)
+      environments/dev/variables.tf:248,254 (backend_cpu / backend_memory "(Strapi)")
+      environments/dev/main.tf:301 ("ECS Service — Backend (Strapi)")
+      environments/dev/main.tf:247 ("Frontend (Node.js)") — it's an nginx SPA.
+
+FIX:
+  Search/replace "Strapi" -> "Express backend" and correct the ALB/enable_https comments.
+  Doc-only; no behavior change.
+
+
+[ ] L6. Dead code
+--------------------------------------------------------------------------------
+WHERE / WHAT:
+  - modules/secrets/main.tf:134-160 — aws_ssm_parameter.frontend_url / backend_url are never
+    wired from environments/dev/main.tf (module call omits frontend_url/backend_url), so
+    count is always 0.
+  - environments/dev/outputs.tf:202-220 — commented-out Strapi outputs.
+  - modules/secrets/main.tf:42-90 — commented-out Strapi secret blocks.
+
+FIX:
+  Either wire the SSM params (pass values from main.tf) or delete the unused variables +
+  resources. Remove the commented-out Strapi blocks/outputs.
+
+
+[ ] L7. Redundant tagging (harmless)
+--------------------------------------------------------------------------------
+WHERE:
+  - environments/dev/providers.tf:19-21,31-33 (default_tags = local.common_tags)
+  - every module merges the same var.tags (= local.common_tags) onto resources.
+
+WHAT:
+  Tags applied twice (values identical, so no conflict). Purely redundant.
+
+FIX (optional):
+  Rely on provider default_tags and stop passing var.tags for the common set, OR keep as-is
+  (explicit per-resource Name/Service tags still needed). Low priority.
+
+
+[ ] L8. Broad IAM permissions (acceptable for dev, not least-privilege)
+--------------------------------------------------------------------------------
+WHERE:
+  - modules/iam/main.tf:325 (logs:* on *)
+  - modules/iam/main.tf:130-145 (ecs_task: secretsmanager:GetSecretValue + ssm on *)
+  - modules/iam/main.tf:391-403 (ecs_task_exec_secrets: GetSecretValue/ssm on *)
+  - modules/iam/main.tf:280-314 (ecr actions on *)
+
+WHAT:
+  Wildcards where scoping to specific ARNs is feasible.
+
+FIX (later, prod-hardening):
+  - Scope secretsmanager:GetSecretValue to the specific secret ARNs
+    (module.secrets.tmdb_api_key_arn, github_token_arn).
+  - Scope logs:* to the specific log-group ARNs, and reduce to needed actions
+    (CreateLogGroup/CreateLogStream/PutLogEvents).
+  - ecr GetAuthorizationToken must stay on * (API requirement); other ecr actions can be
+    scoped to the repo ARNs.
+
+
+[ ] L9. desired_count conflates EC2 host count with task count
+--------------------------------------------------------------------------------
+WHERE:
+  - environments/dev/main.tf:267, 321 (desired_count = var.ecs_desired_capacity)
+
+WHAT:
+  ecs_desired_capacity is the number of EC2 HOSTS but is reused as the per-service task
+  desired_count. Works, but semantically wrong; with autoscaling on it's only the initial value.
+
+FIX:
+  Introduce a dedicated var (e.g. var.service_desired_count, default 1) for task counts,
+  separate from host capacity. Low priority.
+
+
+================================================================================
+NOTES — verified correct (do not change)
+================================================================================
+- VPC/NAT/routing incl. single-vs-multi NAT toggle.
+- SG topology: ALB<->ECS ephemeral bridge-mode ports (32768-65535), endpoint SG HTTPS-only.
+- Shared ALB SG already allows 443 -> backend HTTPS listener is reachable (no SG gap).
+- ALB depends_on VPC (avoids IGW-detach deadlock on destroy).
+- Seed-image bootstrap ordering; CodeBuild webhook/secret dependency chain.
+- ACM create_before_destroy; IMDSv2 required + encrypted EBS; autoscaling ignore_changes[desired_count].
+- State backend: versioned + encrypted S3.
+- acm-certs module removal is clean — no dangling references.
+================================================================================
