@@ -18,7 +18,7 @@
 
 | Environment | Monthly (approx.) | Annual (approx.) |
 |---|---:|---:|
-| **Dev** (as configured today) | **≈ $250** | **≈ $3,000** |
+| **Dev** (as configured today) | **≈ $258** | **≈ $3,090** |
 | **Prod** (projected, production-grade) | **≈ $600** | **≈ $7,200** |
 
 **Key finding — dev is not Fargate.** The ECS services run on an **EC2 launch type**
@@ -34,8 +34,9 @@ cluster (an Auto Scaling Group of `t3.small` hosts with a capacity provider). Th
 3. 🥉 **NAT Gateway — ≈ $44/mo** (single NAT, hourly + data processing).
 4. **ALBs — ≈ $41/mo** (two application load balancers, frontend + backend).
 
-Together those four are ~95% of the dev bill; everything else (Secrets, CloudWatch,
-ECR, S3, CodeBuild) is rounding error at dev scale.
+Together those four are ~92% of the dev bill. **CloudWatch is now ~$10/mo** (up from ~$2)
+because **Container Insights was enabled in dev**; everything else (Secrets, ECR, S3,
+CodeBuild) is rounding error at dev scale.
 
 ---
 
@@ -44,8 +45,8 @@ ECR, S3, CodeBuild) is rounding error at dev scale.
 ### 2.1 Resource inventory (what Terraform actually creates for dev)
 
 Feature flags in `terraform.tfvars`: `single_nat_gateway = true`, `enable_dns = false`,
-`enable_cloudfront = false`, `enable_waf = false`, `enable_container_insights = false`,
-`enable_service_autoscaling = true` (min 2 / max 4 per service).
+`enable_cloudfront = false`, `enable_waf = false`, `enable_container_insights = true`,
+`enable_service_autoscaling = true` (min 1 / max 5 per service).
 
 | Module | Resources | Billable? | Always-on / Usage / Scale-to-zero |
 |---|---|---|---|
@@ -63,7 +64,7 @@ Feature flags in `terraform.tfvars`: `single_nat_gateway = true`, `enable_dns = 
 | `secrets` | **2 Secrets Manager secrets** (tmdb, github) | **Yes** | Always-on ($/secret) |
 | `iam` | Roles, policies, instance profile | No (free) | — |
 | `s3` | 2 buckets (assets, artifacts), versioned | **Yes** | Usage (storage + requests) |
-| `cloudwatch` | 1 dashboard, **8 metric alarms** | **Yes** | Always-on (alarms) + usage (logs) |
+| `cloudwatch` | 1 dashboard, **8 custom metric alarms** (+ ~10 auto-created by service & host autoscaling), **Container Insights enabled** | **Yes** | Always-on (alarms + Insights metrics) + usage (logs) |
 | `codebuild` | 2 projects + 2 webhooks + 2 log groups | **Yes** | Usage (build-minutes) |
 | `dns` | — | **Not created** (enable_dns=false) | — |
 | `cloudfront` | — | **Not created** (enable_cloudfront=false) | — |
@@ -89,19 +90,25 @@ Assumes 730 hrs/month. Usage assumptions are called out and **overridable**.
 | 3 | **NAT Gateway** | ~$0.056/hr + $0.056/GB | 1 NAT; ~50 GB processed | **$43.68** |
 | 4 | **ALB ×2** | ~$0.0225/hr + LCU | 2 ALBs, low LCU (~1–2) | **$41.00** |
 | 5 | **EBS gp3** | ~$0.0912/GB-mo | 30 GiB × 3 hosts = 90 GB | **$8.21** |
-| 6 | **CloudWatch** | $0.10/alarm; ~$0.57/GB logs | 8 alarms + ~2 GB logs; dashboard free | **$2.00** |
+| 6 | **CloudWatch** | $0.10/alarm; ~$0.57/GB logs; Insights metrics | 8 custom + ~10 autoscaling alarms; **Container Insights ✅**; ~2 GB logs; dashboard free | **$10.00** ⁴ |
 | 7 | **CodeBuild** | general1.small ~$0.005/min | ~30 builds × 5 min = 150 min | **$1.00** |
 | 8 | **Data transfer out** | ~$0.109/GB | ~10 GB egress | **$1.00** |
 | 9 | **Secrets Manager** | $0.40/secret + API | 2 secrets | **$0.80** |
 | 10 | **ECR storage** | $0.10/GB-mo | ~5 GB images (≤20/repo) | **$0.50** |
 | 11 | **S3** | ~$0.025/GB + requests | ~2 GB (placeholder assets in dev) | **$0.10** |
 | — | EIP (attached to NAT) | free while attached | 1 | $0.00 |
-| | **DEV TOTAL** | | | **≈ $249.65 / mo** |
-| | **DEV ANNUAL** | | | **≈ $2,996 / yr** |
+| | **DEV TOTAL** | | | **≈ $257.65 / mo** |
+| | **DEV ANNUAL** | | | **≈ $3,092 / yr** |
 
-³ Configured `desired_capacity = 3`, but the capacity provider (target 80%) and
-`ignore_changes = [desired_capacity]` mean the cluster realistically settles at **2–3
-hosts** to fit 4 tasks (2 svc × min 2). Range: **~$33 (2 hosts) → ~$82 (5 max)**.
+³ Configured `desired_capacity = 3` (`min_size = 1`, `max_size = 5`); the capacity
+provider (target 80%) and `ignore_changes = [desired_capacity]` mean the true host count
+floats in **[1, 5]**. Only **2 baseline tasks** run now (2 svc × `service_autoscaling_min = 1`),
+so the cluster is over-provisioned at 3 hosts for 2 tiny tasks. Range: **~$16 (1 host) →
+~$82 (5 max)**; modeled at 3.
+
+⁴ **Container Insights** (newly enabled in dev) bills its metrics as CloudWatch custom
+metrics, so this line is **metric-count dependent** — realistically **~$5–15/mo** for a
+cluster this size. Disabling it in dev drops CloudWatch back to ~$2/mo.
 
 **Hidden-cost callouts (the ones people miss):**
 
@@ -129,11 +136,11 @@ proposal to right-size against real load.**
 |---|---|---|---|
 | `single_nat_gateway` | `true` (1 NAT) | **`false` (2 NAT, per-AZ)** | AZ-level HA for outbound |
 | ECS host type / count | `t3.small` × 3 | **`t3.medium` × 4** (ASG 3–8) | Right-sized, headroom |
-| Service autoscaling min | 2 | **3+ (no scale-to-zero)** | Always-warm |
+| Service autoscaling min | 1 | **3+ (no scale-to-zero)** | Always-warm |
 | `enable_cloudfront` | `false` | **`true`** | CDN, TLS, offload |
 | `enable_waf` | `false` | **`true`** | Edge protection |
 | `enable_dns` | `false` | **`true`** | Route53 zone + ACM |
-| `enable_container_insights` | `false` | **`true`** | Observability |
+| `enable_container_insights` | **`true`** (now on in dev too) | **`true`** | Observability |
 | `log_retention_days` | 7 | **30–90** | Audit/retention |
 | EBS root | 30 GiB | **50 GiB** | Image/log headroom |
 
@@ -174,7 +181,7 @@ proposal to right-size against real load.**
 | ALB ×2 | $41.00 | $100.00 |
 | NAT Gateway | $43.68 (×1) | $98.50 (×2) |
 | CloudFront | — | $50.00 |
-| CloudWatch | $2.00 | $40.00 |
+| CloudWatch (incl. Container Insights) | $10.00 | $40.00 |
 | WAF | — | $20.00 |
 | EBS gp3 | $8.21 | $18.24 |
 | Inter-AZ / data transfer | $1.00 | $15.00 |
@@ -183,8 +190,8 @@ proposal to right-size against real load.**
 | ECR | $0.50 | $1.00 |
 | Route53 | — | $1.00 |
 | Secrets Manager | $0.80 | $0.80 |
-| **Monthly total** | **≈ $250** | **≈ $592** |
-| **Annual total** | **≈ $3,000** | **≈ $7,100** |
+| **Monthly total** | **≈ $258** | **≈ $592** |
+| **Annual total** | **≈ $3,090** | **≈ $7,100** |
 
 ---
 
@@ -198,7 +205,7 @@ proposal to right-size against real load.**
 | 2 | **Fargate Spot / EC2 Spot for non-critical tasks.** Frontend (stateless nginx/SPA) is a good Spot candidate; run baseline on-demand + burst on Spot. | ~30–60% of burst compute | ASG / capacity provider |
 | 3 | **Compute Savings Plan** on the steady prod EC2 baseline (1- or 3-yr). | ~20–40% on baseline EC2 | prod ASG |
 | 4 | **Single NAT in dev (already done ✅).** Keep `single_nat_gateway = true` for dev. Only use per-AZ NAT where AZ-HA is required. | already applied | `vpc` |
-| 5 | **Tighten log retention & Container Insights scope.** 30d (not 90d) for most groups; enable Insights only on prod. Dev already at 7d ✅. | $10–25/mo (prod) | `cloudwatch`, `log_retention_days` |
+| 5 | **Tighten log retention & Container Insights scope.** 30d (not 90d) for most groups. **Dev now has Container Insights ENABLED — disable it in dev to save ~$5–15/mo** (log retention already 7d ✅). Enable Insights on prod only. | ~$5–15/mo (dev) + $10–25/mo (prod) | `cloudwatch`, `log_retention_days`, `enable_container_insights` |
 | 6 | **S3 lifecycle to IA/Glacier** for artifacts + versioned assets. Non-current expiry already configured ✅ — add a transition rule for cold artifacts. | small now, scales | `modules/s3` |
 | 7 | **Right-size ECS tasks/hosts from real metrics.** 256 CPU / 512–768 MiB tasks may over/under-fit `t3.small`; validate before committing to prod sizing. | variable | tfvars |
 | 8 | **Consider one shared ALB with host/path routing** instead of two, if the frontend/backend split allows it. | ~$20/mo | `modules/alb` |
