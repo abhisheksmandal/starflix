@@ -181,9 +181,11 @@ fi
 
 # Helper: current desired/running for both services.
 svc_counts() {
+  # List (not a struct) so --output text preserves column order: svc desired running.
+  # A struct would be emitted with keys sorted alphabetically, breaking the monitor's awk.
   aws ecs describe-services --cluster "${CLUSTER}" \
     --services "${FRONTEND_SVC}" "${BACKEND_SVC}" --region "${REGION}" \
-    --query 'services[].{svc:serviceName,desired:desiredCount,running:runningCount}' \
+    --query 'services[].[serviceName,desiredCount,runningCount]' \
     --output text 2>/dev/null
 }
 # Helper: registered container instances (EC2 hosts) in the cluster.
